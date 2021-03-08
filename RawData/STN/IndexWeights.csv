@@ -1,0 +1,32 @@
+Area,AreaName,StationCode,DSIndexWtFactor,SBIndexWtFactor
+1,Montezuma Slough,606,20,20
+1,Montezuma Slough,609,15,15
+1,Montezuma Slough,610,4,4
+2,Suisun Bay,323,213,213
+2,Suisun Bay,405,13,13
+2,Suisun Bay,411,46,46
+2,Suisun Bay,418,70,70
+2,Suisun Bay,501,49,49
+2,Suisun Bay,504,60,60
+2,Suisun Bay,508,31,31
+2,Suisun Bay,513,43,43
+2,Suisun Bay,519,15,15
+2,Suisun Bay,520,9,9
+2,Suisun Bay,602,44,44
+3,Sacramento River,704,53,53
+3,Sacramento River,706,27,27
+3,Sacramento River,707,35,35
+3,Sacramento River,711,32,32
+4,Lower San Joaquin,801,26,26
+4,Lower San Joaquin,804,52,52
+4,Lower San Joaquin,809,56,56
+4,Lower San Joaquin,812,22,22
+5,East Delta,815,40,40
+5,East Delta,906,21,21
+5,East Delta,910,11,11
+5,East Delta,912,8,8
+5,East Delta,919,10,10
+6,South Delta,902,23,23
+6,South Delta,914,15,15
+6,South Delta,915,15,15
+6,South Delta,918,11,11

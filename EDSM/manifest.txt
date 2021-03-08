@@ -1,7 +1,0 @@
-Manifest file for edi.415.3-4c9184f37cff01bcdc32dc486ec36961.zip created on Tue Jul 28 16:57:48 MDT 2020
-EDSM_20mm.csv (4849327 bytes)
-EDSM_KDTR.csv (31616992 bytes)
-EDSM_Fish_Taxonomy.csv (16721 bytes)
-edi.415.3.xml (154029 bytes)
-edi.415.3.txt (89940 bytes)
-edi.415.3.report.xml (72484 bytes)

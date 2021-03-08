@@ -11,33 +11,33 @@ library(lubridate)
 #Set working directory, adjust as needed
 
 
-setwd("C:/Users/40545/ICF/IEP Fish Survey Evaluation - General/Survey Evaluation and Design - Shared/Public/1. Data")
+setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
 #Read database files and assign column types if needed
-Sample <- read_csv("Raw Data/STN/CSVs/Sample.csv",
+Sample <- read_csv("RawData/STN/Sample.csv",
                    col_types=c("dDffdddddddddcdffdffddddddddddddlllllll"))
 
-TowEffort <- read_csv("Raw Data/STN/CSVs/TowEffort.csv",col_types = "dddccddddcl")
+TowEffort <- read_csv("RawData/STN/TowEffort.csv",col_types = "dddccddddcl")
 
-Catch <- read_csv("Raw Data/STN/CSVs/Catch.csv")
+Catch <- read_csv("RawData/STN/Catch.csv")
 
-Length <- read_csv("Raw Data/STN/CSVs/Length.csv")
+Length <- read_csv("RawData/STN/Length.csv")
 
-Station <- read_csv("Raw Data/STN/CSVs/luStation.csv",col_types = "dflddccddddddcffcfddddddddd")%>%
+Station <- read_csv("RawData/STN/luStation.csv",col_types = "dflddccddddddcffcfddddddddd")%>%
   rename("StationCode"="StationCodeSTN")
 
 
 #Lookup tables
 
-luMicrocystis <- read_csv("Raw Data/STN/CSVs/luMicrocystis.csv",col_types = "fc")
+luMicrocystis <- read_csv("RawData/STN/luMicrocystis.csv",col_types = "fc")
 
-luOrganism <- read_csv("Raw Data/STN/CSVs/luOrganism.csv")
+luOrganism <- read_csv("RawData/STN/luOrganism.csv")
 
-luTide <- read_csv("Raw Data/STN/CSVs/luTide.csv")
+luTide <- read_csv("RawData/STN/luTide.csv")
 
-luTowDirection <- read_csv("Raw Data/STN/CSVs/luTowDirection.csv")
+luTowDirection <- read_csv("RawData/STN/luTowDirection.csv")
 
-luIndexWeights <- read_csv("Raw Data/STN/CSVs/IndexWeights.csv",col_types = "fffdd")
+luIndexWeights <- read_csv("RawData/STN/IndexWeights.csv",col_types = "fffdd")
 
 
 STN_Tidy_All <- Sample %>% right_join(TowEffort,by="SampleRowID")%>%
@@ -54,6 +54,12 @@ STN_Tidy_All <- Sample %>% right_join(TowEffort,by="SampleRowID")%>%
   select(-MicrocystisID)%>%
   rename("OrganismCodeSTN"="OrganismCode")%>%#========Add Taxonomy======
   left_join(luOrganism,by="OrganismCodeSTN")%>%
+  rename("Weather"="WeatherCode")%>%#========Rename Weather======
+  left_join(luWeather,by="Weather")%>%
+  select(-Weather)%>%
+  rename("Waves"="WaveCode")%>%#========Rename Waves======
+  left_join(luWaves,by="Waves")%>%
+  select(-Waves)%>%
   add_column(SurveySeason="STN",.before = "SampleRowID")%>%
   left_join(luIndexWeights,by="StationCode")%>%
   mutate(Year=year(SampleDate),
@@ -67,9 +73,6 @@ STN_Tidy_All <- Sample %>% right_join(TowEffort,by="SampleRowID")%>%
          latitude_STN_2019=LatD_2019+LatM_2019/60+LatS_2019/3600)%>%
   select(-c(LatD_2019:LonS_2019))   
 
-
-plot(STN_Tidy_All$longitude_STN,STN_Tidy_All$latitude_STN)
-points(STN_Tidy_All$longitude_STN_2019,STN_Tidy_All$latitude_STN_2019,pch=".")
 
 
 STN_Tidy <- STN_Tidy_All %>% select(c(1:4,6:13,19:30,38:45,48:53,57:60,62,63,67,68))
