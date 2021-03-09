@@ -91,20 +91,33 @@ left_join(luOrganism,by="OrganismCode")%>%
   rename("StationComments" = "Comments.x",
          "StationActive" = "Active.x",
          "SpeciesComment" =  "Comments.y",
-         "SpeciesActive" = "Active.y")
+         "SpeciesActive" = "Active.y",
+         "TemperatureTop"="WaterTemperature",
+         "TemperatureBottom"="BottomTemperature",
+         "TimeStart" = "SampleTimeStart",
+         "TimeStop" = "SampleTimeEnd",
+         "MeterIn" = "MeterStart",
+         "MeterOut" = "MeterEnd",
+         "OrganismCodeFMWT" = "OrganismCode",
+         "Station_Longitude" = "longitude_FMWT",
+         "Station_Latitude" = "latitude_FMWT"
+         )%>%
+  mutate(TowNumber = 1,.after=TowDuration)%>%
+  mutate(ZeroLength=if_else(ForkLength==0,TRUE,FALSE))%>%
+  relocate(Phylum:Species,.after = OrganismCodeFMWT)%>%
+  relocate(Station_Longitude:Station_Latitude,.after = StationCode)%>%
+  relocate(ZeroLength,.after = ForkLength)
+  
 
 #=========
-FMWT_Tidy_All$Dead[FMWT_Tidy_All$Dead=="n/p"] <- NA
-FMWT_Tidy_All$MarkCode[FMWT_Tidy_All$MarkCode=="n/p"] <- NA
+# FMWT_Tidy_All$Dead[FMWT_Tidy_All$Dead=="n/p"] <- NA
+# FMWT_Tidy_All$MarkCode[FMWT_Tidy_All$MarkCode=="n/p"] <- NA
 
 
-names(FMWT_Tidy_All)
-
-table(is.na(FMWT_Tidy_All$ConductivityBottom))
 #Remove redundant or non-essential variables
 FMWT_Tidy <- FMWT_Tidy_All %>% 
-  select(-c(SampleRowID,CatchRowID,DateEntered.x,DateEntered.y,LengthRowID,StationRowID,Gear,OrganismRowID,X,Y,Offset))%>%
-  mutate(ZeroLength=if_else(ForkLength==0,TRUE,FALSE))
+  select(-c(SampleRowID,CatchRowID,DateEntered.x,DateEntered.y,LengthRowID,StationRowID,
+            Gear,OrganismRowID,X,Y,Offset,MethodCode,SecchiEstimated,AreaRowID))%>%uncount(LengthFrequency)
 
 
 
@@ -116,8 +129,5 @@ FMWT_Tidy_Counts <- FMWT_Tidy %>% uncount(LengthFrequency)%>%
   mutate_at("ForkLength",~ifelse(is.na(.), mean(., na.rm = TRUE),.))%>%
   filter(is.nan(ForkLength)==T)
 
-table(FMWT_Tidy_Counts$CommonName)
 
-FMWT_Tidy_Long %>% filter(ForkLength <300 & ForkLength > 0) %>% ggplot(aes(x=ForkLength))+geom_density()+facet_grid(.~Species)
-
-                           
+FMWT_Tidy$organi

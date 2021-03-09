@@ -39,6 +39,10 @@ luTowDirection <- read_csv("RawData/STN/luTowDirection.csv")
 
 luIndexWeights <- read_csv("RawData/STN/IndexWeights.csv",col_types = "fffdd")
 
+luWaves <- read_csv("RawData/STN/luWaves.csv",col_types = "ff")
+
+luWeather <- read_csv("RawData/STN/luWeather.csv",col_types = "ff")
+
 
 STN_Tidy_All <- Sample %>% right_join(TowEffort,by="SampleRowID")%>%
   right_join(Catch,by="TowRowID")%>%
@@ -54,30 +58,57 @@ STN_Tidy_All <- Sample %>% right_join(TowEffort,by="SampleRowID")%>%
   select(-MicrocystisID)%>%
   rename("OrganismCodeSTN"="OrganismCode")%>%#========Add Taxonomy======
   left_join(luOrganism,by="OrganismCodeSTN")%>%
-  rename("Weather"="WeatherCode")%>%#========Rename Weather======
-  left_join(luWeather,by="Weather")%>%
-  select(-Weather)%>%
-  rename("Waves"="WaveCode")%>%#========Rename Waves======
-  left_join(luWaves,by="Waves")%>%
-  select(-Waves)%>%
+  rename("WeatherCode" ="Weather")%>%#========Rename Weather======
+  left_join(luWeather,by="WeatherCode")%>%
+  select(-WeatherCode)%>%
+  rename("WaveCode" = "Waves")%>%#========Rename Waves======
+  left_join(luWaves,by="WaveCode")%>%
+  select(-WaveCode)%>%
   add_column(SurveySeason="STN",.before = "SampleRowID")%>%
   left_join(luIndexWeights,by="StationCode")%>%
   mutate(Year=year(SampleDate),
          Month=month(SampleDate),
          JulianDay = yday(SampleDate),
+         Survey_Station = paste(SurveySeason,StationCode,sep="_"),
          .after="SampleDate")%>%
   left_join(Station,by="StationCode")%>%
-  mutate(longitude_STN=-(LonD+LonM/60+LonS/3600),latitude_STN=LatD+LatM/60+LatS/3600)%>%
+  mutate(Station_Longitude=-(LonD+LonM/60+LonS/3600),Station_Latitude=LatD+LatM/60+LatS/3600)%>%
   select(-c(LatD:LonS)) %>%
   mutate(longitude_STN_2019=-(LonD_2019+LonM_2019/60+LonS_2019/3600),
          latitude_STN_2019=LatD_2019+LatM_2019/60+LatS_2019/3600)%>%
-  select(-c(LatD_2019:LonS_2019))   
+  mutate(Start_Longitude=-(StartLongDegrees+StartLongMinutes/60+StartLongSeconds/3600),
+         Start_Latitude=-(StartLatDegrees+StartLatMinutes/60+StartLatSeconds/3600),
+         End_Longitude=-(EndLongDegrees+EndLongMinutes/60+EndLongSeconds/3600),
+         End_Latitude=-(EndLatDegrees+EndLatMinutes/60+EndLatSeconds/3600))%>%
+  select(-c(StartLatDegrees:EndLongSeconds))%>%
+  select(-c(LatD_2019:LonS_2019,SampleRowID))%>%
+  filter(Catch>0)%>%
+  rename("StationActive" = "Active.x",
+         "SpeciesActive" = "Active.y")%>%
+  mutate(ZeroLength=if_else(ForkLength==0,TRUE,FALSE))%>%
+  relocate(NetErrors:FieldsheetCorrected,.after=ZeroLength)%>%
+  relocate(TowDirection:Microcystis,.after=MeterDifference)%>%
+  relocate(Weather:Waves,.after=Microcystis)%>%
+  relocate(Start_Longitude:End_Latitude,.after=Waves)%>%
+  relocate(Phylum:Species,.after = OrganismCodeSTN)%>%
+  relocate(Station_Longitude:Station_Latitude,.after = StationCode)%>%
+  relocate(OrganismCodeMWT,.after=End_Latitude)%>%
+  relocate(OrganismCodeSTN,.after=OrganismCodeMaster)%>%
+  relocate(ZeroLength,.after = ForkLength)%>%
+  rename("SurveyNumber"="Survey",
+         "Turbidity" = "TurbidityTop",
+         "OrganismCodeFMTW" = "OrganismCodeMWT")%>%
+  add_column(TowDuration=NA,.after = "TowNumber")
+
+STN_MetaData <- STN_Tidy_All%>%
+  select(-c(SampleComments,NetErrors:FieldsheetCorrected,TowComments,MeterEstimate))
+
+STN_Tidy <-  STN_Tidy_All%>%
+  select(-c(CatchRowID,LengthRowID,StationRowID,OrganismRowID,UserName,SampleComments,NetErrors:FieldsheetCorrected,
+            TowRowID,MeterSerial,TowComments,MeterEstimate))%>%
+ uncount(LengthFrequency)
 
 
+data.frame(FMWT=names(FMWT_Tidy),STN=names(STN_Tidy)[1:68])
 
-STN_Tidy <- STN_Tidy_All %>% select(c(1:4,6:13,19:30,38:45,48:53,57:60,62,63,67,68))
-
-which(names(STN_Tidy_All)=="OrganismCodeSTN")
-
-names(STN_Tidy_All)
-
+names(STN_Tidy)
