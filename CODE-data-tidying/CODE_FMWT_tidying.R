@@ -100,14 +100,22 @@ left_join(luOrganism,by="OrganismCode")%>%
          "MeterOut" = "MeterEnd",
          "OrganismCodeFMWT" = "OrganismCode",
          "Station_Longitude" = "longitude_FMWT",
-         "Station_Latitude" = "latitude_FMWT"
+         "Station_Latitude" = "latitude_FMWT",
+         "WeightingFactor" = "WTFACTOR"
          )%>%
   mutate(TowNumber = 1,.after=TowDuration)%>%
   mutate(ZeroLength=if_else(ForkLength==0,TRUE,FALSE))%>%
   relocate(Phylum:Species,.after = OrganismCodeFMWT)%>%
   relocate(Station_Longitude:Station_Latitude,.after = StationCode)%>%
-  relocate(ZeroLength,.after = ForkLength)
+  relocate(ZeroLength,.after = ForkLength)%>%
+  relocate(Area,.after = OrderNum)%>%
+  relocate(WeightingFactor, .after = Area)%>%
+  relocate(CommonName, .after = WeightingFactor)%>%
+  relocate(LengthFrequency, .after = StationActive)%>%
+  mutate_at(vars(Survey_Station:StationCode,Area,CommonName),as.factor)%>%
+  mutate(OrderNum = as.numeric(OrderNum))
   
+
 
 #=========
 # FMWT_Tidy_All$Dead[FMWT_Tidy_All$Dead=="n/p"] <- NA
@@ -117,17 +125,13 @@ left_join(luOrganism,by="OrganismCode")%>%
 #Remove redundant or non-essential variables
 FMWT_Tidy <- FMWT_Tidy_All %>% 
   select(-c(SampleRowID,CatchRowID,DateEntered.x,DateEntered.y,LengthRowID,StationRowID,
-            Gear,OrganismRowID,X,Y,Offset,MethodCode,SecchiEstimated,AreaRowID))%>%uncount(LengthFrequency)
+            Gear,OrganismRowID,X,Y,Offset,MethodCode,SecchiEstimated,AreaRowID,
+            RKI,`Channel/Shoal`:OrganismSymbol,NormalizedCode))%>%
+  rename(Comment1 = StationComments,
+         Comment2 = SpeciesComment)%>%
+  add_column(Comment3=NA)
+
+save(FMWT_Tidy,file="TidyData/DATA_FMWT_Tidy.rda")
 
 
 
-
-FMWT_Tidy$ForkLength[FMWT_Tidy$ForkLength==0] <-NA
-#========Assign tow-average lengths to unmeasured individuals==================
-FMWT_Tidy_Counts <- FMWT_Tidy %>% uncount(LengthFrequency)%>%
-  group_by(SampleDate,StationCode,OrganismCode)%>%
-  mutate_at("ForkLength",~ifelse(is.na(.), mean(., na.rm = TRUE),.))%>%
-  filter(is.nan(ForkLength)==T)
-
-
-FMWT_Tidy$organi

@@ -9,8 +9,6 @@ library(tidyverse)
 library(lubridate)
 
 #Set working directory, adjust as needed
-
-
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
 #Read database files and assign column types if needed
@@ -95,20 +93,36 @@ STN_Tidy_All <- Sample %>% right_join(TowEffort,by="SampleRowID")%>%
   relocate(OrganismCodeMWT,.after=End_Latitude)%>%
   relocate(OrganismCodeSTN,.after=OrganismCodeMaster)%>%
   relocate(ZeroLength,.after = ForkLength)%>%
+  relocate(Area,.after = OrderNum)%>%
+  relocate(WeightingFactor, .after = Area)%>%
+  relocate(CommonName, .after = WeightingFactor)%>%
+  relocate(StationActive, .after = CommonName)%>%
+  relocate(LengthFrequency, .after = StationActive)%>%
   rename("SurveyNumber"="Survey",
          "Turbidity" = "TurbidityTop",
-         "OrganismCodeFMTW" = "OrganismCodeMWT")%>%
-  add_column(TowDuration=NA,.after = "TowNumber")
+         "OrganismCodeFMWT" = "OrganismCodeMWT")%>%
+  add_column(TowDuration=NA,.after = "TowNumber")%>%
+  mutate_at(vars(Survey_Station,MarkCode,Dead,CommonName),as.factor)%>%
+  mutate_at(vars(TimeStart:TimeStop,TowDuration),as.numeric)%>%
+  relocate(SampleComments,.after=Comments)%>%
+  relocate(TowComments,.after=Comments)
 
 STN_MetaData <- STN_Tidy_All%>%
   select(-c(SampleComments,NetErrors:FieldsheetCorrected,TowComments,MeterEstimate))
 
 STN_Tidy <-  STN_Tidy_All%>%
-  select(-c(CatchRowID,LengthRowID,StationRowID,OrganismRowID,UserName,SampleComments,NetErrors:FieldsheetCorrected,
-            TowRowID,MeterSerial,TowComments,MeterEstimate))%>%
- uncount(LengthFrequency)
+  select(-c(CatchRowID,LengthRowID,StationRowID,OrganismRowID,UserName,NetErrors:FieldsheetCorrected,
+            TowRowID,MeterSerial,MeterEstimate,OrganismCodeMaster:Region,
+            RKI:`TNS Diet Area`,STRArea:FieldsheetCorrected))%>%
+  rename(Comment1 = Comments,
+         Comment2 = TowComments,
+         Comment3 = SampleComments)
 
 
-data.frame(FMWT=names(FMWT_Tidy),STN=names(STN_Tidy)[1:68])
+save(STN_Tidy,file="TidyData/DATA_STN_Tidy.rda")
 
 names(STN_Tidy)
+
+data.frame(names(STN_Tidy),names(FMWT_Tidy)[1:55])
+
+
