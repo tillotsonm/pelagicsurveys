@@ -5,7 +5,8 @@
 #Updated March 11, 2021
 #Currently incomplete. Integrates SKT, STN and FMWT, but does not include
 #20mm or SLS and does not have CPUE calculated.
-
+require(tidyverse)
+require(stringr)
 
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
@@ -49,18 +50,13 @@ All_Surveys_Long <- STN_FMWT_FLAdjusted%>%
   add_row(SKT_Tidy)%>%
   add_row(SLS_Tidy)%>%
   add_row(Tidy_20mm)%>%
-  select(-ID)
+  select(-ID)%>%
+  mutate(across(c("CommonName","TowDirection"), as.factor))%>% 
+  mutate(CommonName = as.character(CommonName),
+         CommonName = str_to_title(CommonName),
+         CommonName = as.factor(CommonName))
 
-table(All_Surveys_Long$SurveySeason,is.na(All_Surveys_Long$LengthFrequency))
-
-All_2000_Long <- STN_FMWT_FLAdjusted%>%
-  add_row(SKT_Tidy)%>%
-  add_row(SLS_Tidy)%>%
-  add_row(Tidy_20mm)%>%
-  filter(Year>1999)%>%
-  select(-ID)
-
-Primary_2000_LF <- Primary_2000_Long %>% 
+All_Surveys_LF <- All_Surveys_Long %>% 
   group_by(Survey_Station,SampleDate,TowNumber,CommonName,ForkLength)%>%
   mutate(LengthFrequency = n())%>%ungroup()%>%
   group_by(Survey_Station,SampleDate,TowNumber,CommonName)%>%
@@ -68,16 +64,26 @@ Primary_2000_LF <- Primary_2000_Long %>%
   distinct(across(c(Survey_Station,SampleDate,TowNumber,CommonName,ForkLength)),.keep_all = TRUE)%>%
   mutate(ForkLength = na_if(ForkLength,0))%>%select(-Catch)
 
-Primary_2000_Species <- Primary_2000_LF %>%
+All_Surveys_Species <- All_Surveys_LF %>%
   group_by(Survey_Station,SampleDate,TowNumber,CommonName,ForkLength)%>%
   mutate(Mean_Length = mean(ForkLength,na.rm = T))%>%ungroup%>%
   distinct(across(c(Survey_Station,SampleDate,TowNumber,CommonName)),.keep_all = TRUE)%>%
   select(-LengthFrequency)
 
 
+All_2000_Long <- All_Surveys_Long %>% filter(Year > 1999)
 
-save(Primary_2000_Long,Primary_2000_LF,Primary_2000_Species,file="TidyData/SKT_STN_FMWT_Tidy.rda")
+All_2000_LF <- All_Surveys_LF %>% filter(Year > 1999)
 
-names(Primary_2000_Long)
+All_2000_Species <- All_Surveys_Species %>% filter(Year > 1999)
 
-names(Tidy_20mm)[which(is.na(match(names(Tidy_20mm),names(Primary_2000_Long))))]
+
+
+save(All_Surveys_Long,All_Surveys_LF,All_Surveys_Species,
+     file="TidyData/All_Surveys_Tidy.rda")
+save(All_2000_Long,All_2000_LF,All_2000_Species,
+     file="TidyData/All_2000_Tidy.rda")
+
+
+levels(All_2000_Long$CommonName)
+  
