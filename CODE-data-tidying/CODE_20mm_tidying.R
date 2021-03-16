@@ -11,11 +11,17 @@ setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
 Survey <- read_csv("RawData/20mm/Survey.csv",col_types = "dDdc")%>%
   rename(Comment1 = Comments)
-Station <- read_csv("RawData/20mm/Station.csv",col_types = "ddfdddddddddddc")
+
+Station <- read_csv("RawData/20mm/Station.csv",col_types = "ddfdddddddddddc")%>%
+  left_join(read_csv("RawData/20mm/20mm_Station_file.csv",col_types="fdd")[-1,],
+            by="Station")
+
 Tow <- read_csv("RawData/20mm/Tow.csv",col_types = "ddddfddd")
+
 Gear <- read_csv("RawData/20mm/Gear.csv",col_types="dddddddc")%>%
   left_join(read_csv("RawData/20mm/GearCodesLkp.csv"),by="GearCode")%>%
   select(-GearCode)%>%rename(Comment2 = Comments)
+
 luTide <- read_csv("RawData/SLS/luTide.csv",col_types = "ff")
 
 FishSample <- read_csv("RawData/20mm/FishSample.csv")%>%
@@ -47,7 +53,7 @@ Tidy_20mm_all <- Survey %>%
          JulianDay = yday(SampleDate),
          Survey_Station = paste(SurveySeason,StationCode,sep="_"),
          .after="SampleDate")%>%
-  mutate(Station_Longitude=-(LonDeg+LonMin/60+LonSec/3600),Station_Latitude=LatDeg+LatMin/60+LatSec/3600,
+  mutate(Start_Longitude=-(LonDeg+LonMin/60+LonSec/3600),Start_Latitude=LatDeg+LatMin/60+LatSec/3600,
          MarkCode = as.factor(MarkCode),Dead = as.factor(Dead))%>%
   select(-c(LatDeg:LonSec)) %>%
   select(-c(SurveyID))%>%filter(Gear=="Net")
@@ -60,7 +66,7 @@ Tidy_20mm <- Tidy_20mm_all %>%
             MeterCheck,Active,GearID))%>%
   add_column(LengthFrequency=1)
 
-save(Tidy_20mm,file="TidyData/DATA_20mm_Tidy.rda")
+save(Tidy_20mm,file="TidyData/Individual Surveys/DATA_20mm_Tidy.rda")
 
 
 

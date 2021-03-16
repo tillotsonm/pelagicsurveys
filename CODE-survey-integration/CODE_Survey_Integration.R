@@ -10,11 +10,11 @@ require(stringr)
 
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
-load("TidyData/DATA_STN_Tidy.rda")
-load("TidyData/DATA_FMWT_Tidy.rda")
-load("TidyData/DATA_SKT_Tidy.rda")
-load("TidyData/DATA_SLS_Tidy.rda")
-load("TidyData/DATA_20mm_Tidy.rda")
+load("TidyData/Individual Surveys/DATA_STN_Tidy.rda")
+load("TidyData/Individual Surveys/DATA_FMWT_Tidy.rda")
+load("TidyData/Individual Surveys/DATA_SKT_Tidy.rda")
+load("TidyData/Individual Surveys/DATA_SLS_Tidy.rda")
+load("TidyData/Individual Surveys/DATA_20mm_Tidy.rda")
 
 
 STN_FMWT <- FMWT_Tidy%>%add_row(STN_Tidy)%>%
@@ -70,6 +70,7 @@ All_Surveys_Species <- All_Surveys_LF %>%
   distinct(across(c(Survey_Station,SampleDate,TowNumber,CommonName)),.keep_all = TRUE)%>%
   select(-LengthFrequency)
 
+table(All_Surveys_Long$SurveySeason)
 
 All_2000_Long <- All_Surveys_Long %>% filter(Year > 1999)
 

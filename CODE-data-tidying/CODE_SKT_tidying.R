@@ -77,13 +77,18 @@ SKT_Tidy_All <- Sample %>%
   add_column(TowNumber=1,.after = "SurveyNumber")%>%
   rename(Comment1 = SampleComments,
          Comment2 = CatchComments,
-         Comment3 = Comments)
-  
+         Comment3 = Comments)%>%
+  group_by(SampleDate, StationCode, CommonName)%>%
+  add_tally(name="TotalMeasured")%>%
+  group_by(SampleDate, StationCode, CommonName, ForkLength)%>%
+  add_tally(name="LengthFrequency")%>%
+  mutate(LengthFrequency_Adjusted = round(Catch*(LengthFrequency/TotalMeasured),0))%>%
+  filter(is.na(LengthFrequency_Adjusted)==F)%>%
+  uncount(LengthFrequency_Adjusted)%>%select(-c(LengthFrequency,TotalMeasured))
 
 SKT_Tidy <- SKT_Tidy_All %>%   select(-c(`2nd Stage`,CODE,LengthRowID,CatchRowID,SampleRowID,LengthRowID,
                                          `Sort Order`,FishID1,FishID2,AlternateName,Depth,
-                                         OrganismCode,NameInSAS,Volume,Start_Longitude,Start_Latitude))%>%
-  add_column(LengthFrequency=1)
+                                         OrganismCode,NameInSAS,Volume,Start_Longitude,Start_Latitude))
 
-save(SKT_Tidy,file="TidyData/DATA_SKT_Tidy.rda")
+save(SKT_Tidy,file="TidyData/Individual Surveys/DATA_SKT_Tidy.rda")
   
