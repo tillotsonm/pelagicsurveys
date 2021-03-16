@@ -9,6 +9,7 @@ require(tidyverse)
 
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
+load("TidyData/DATA_All_Surveys_Tidy.rda")
 
 All_Surveys_Long %>% filter(ForkLength<150 & ForkLength > 0)%>%
   ggplot(aes(x=ForkLength,fill=SurveySeason))+geom_density()+

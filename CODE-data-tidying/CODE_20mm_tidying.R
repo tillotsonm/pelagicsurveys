@@ -4,6 +4,9 @@
 #Prepared by Michael Tillotson, ICF
 #Created March 11, 2021
 #==============================================================================
+require(tidyverse)
+require(lubridate)
+
 
 #Set working directory, adjust as needed
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
@@ -24,6 +27,7 @@ Gear <- read_csv("RawData/20mm/Gear.csv",col_types="dddddddc")%>%
 
 luTide <- read_csv("RawData/SLS/luTide.csv",col_types = "ff")
 
+#Load and join fish FishSample, FishLength and FishCode data
 FishSample <- read_csv("RawData/20mm/FishSample.csv")%>%
   right_join(read_csv("RawData/20mm/FishLength.csv",col_types="dddlldd"),by="FishSampleID")%>%
   left_join(read_csv("RawData/20mm/FishCodes.csv"),by="FishCode")%>%
@@ -56,15 +60,24 @@ Tidy_20mm_all <- Survey %>%
   mutate(Start_Longitude=-(LonDeg+LonMin/60+LonSec/3600),Start_Latitude=LatDeg+LatMin/60+LatSec/3600,
          MarkCode = as.factor(MarkCode),Dead = as.factor(Dead))%>%
   select(-c(LatDeg:LonSec)) %>%
-  select(-c(SurveyID))%>%filter(Gear=="Net")
+  select(-c(SurveyID))%>%filter(Gear=="Net")%>%
+#Remove duplicate length rows for species-date-catch combinations
+distinct(across(c(SampleDate, StationCode, CommonName, ForkLength)),.keep_all = T)%>%
+  #==================Deal with unmeasured fish==============================
+group_by(SampleDate, StationCode, CommonName)%>%
+  add_tally(name="TotalMeasured")%>%
+  group_by(SampleDate, StationCode, CommonName, ForkLength)%>%
+  add_tally(name="LengthFrequency")%>%
+  mutate(LengthFrequency_Adjusted = round(Catch*(LengthFrequency/TotalMeasured),0))%>%
+  uncount(LengthFrequency_Adjusted)%>%select(-c(LengthFrequency,TotalMeasured))
+
   
 
 Tidy_20mm <- Tidy_20mm_all %>% 
   select(-c(StationID,TowID,Gear,
             GearDescription,Order,
             SampleCode,FishCode,
-            MeterCheck,Active,GearID))%>%
-  add_column(LengthFrequency=1)
+            MeterCheck,Active,GearID))
 
 save(Tidy_20mm,file="TidyData/Individual Surveys/DATA_20mm_Tidy.rda")
 

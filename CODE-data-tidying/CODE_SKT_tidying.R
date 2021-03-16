@@ -17,7 +17,8 @@ Catch <- read_csv("RawData/SKT/tblCatch.csv",
                   col_types = "ddfdc")%>%
   filter(Catch>0)
 
-Length <- read_csv("RawData/SKT/tblFishInfo.csv",col_types = "ddffddfffff")
+Length <- read_csv("RawData/SKT/tblFishInfo.csv",col_types = "ddffddfffff")%>%
+  filter(ForkLength>0)
 
 Station <- read_csv("RawData/SKT/lktblStationsSKT.csv",
                     col_types = "dfdddddddcc")%>%
@@ -78,12 +79,14 @@ SKT_Tidy_All <- Sample %>%
   rename(Comment1 = SampleComments,
          Comment2 = CatchComments,
          Comment3 = Comments)%>%
-  group_by(SampleDate, StationCode, CommonName)%>%
+  #Remove duplicate length rows for species-date-catch combinations
+  distinct(across(c(SampleDate, StationCode, CommonName, ForkLength,Sex)),.keep_all = T)%>%
+  #==================Deal with unmeasured fish==============================
+  group_by(SampleDate, StationCode, CommonName, Sex)%>%
   add_tally(name="TotalMeasured")%>%
-  group_by(SampleDate, StationCode, CommonName, ForkLength)%>%
+  group_by(SampleDate, StationCode, CommonName, ForkLength,Sex)%>%
   add_tally(name="LengthFrequency")%>%
   mutate(LengthFrequency_Adjusted = round(Catch*(LengthFrequency/TotalMeasured),0))%>%
-  filter(is.na(LengthFrequency_Adjusted)==F)%>%
   uncount(LengthFrequency_Adjusted)%>%select(-c(LengthFrequency,TotalMeasured))
 
 SKT_Tidy <- SKT_Tidy_All %>%   select(-c(`2nd Stage`,CODE,LengthRowID,CatchRowID,SampleRowID,LengthRowID,
@@ -92,3 +95,6 @@ SKT_Tidy <- SKT_Tidy_All %>%   select(-c(`2nd Stage`,CODE,LengthRowID,CatchRowID
 
 save(SKT_Tidy,file="TidyData/Individual Surveys/DATA_SKT_Tidy.rda")
   
+
+
+                                   

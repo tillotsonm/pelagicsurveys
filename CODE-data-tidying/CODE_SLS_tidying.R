@@ -81,18 +81,29 @@ SLS_Tidy_All <- Sample %>%
          Month=month(SampleDate),
          JulianDay = yday(SampleDate),
          Survey_Station = paste(SurveySeason,StationCode,sep="_"),
-         .after="SampleDate")
+         .after="SampleDate")%>%
+  #==================Deal with unmeasured fish==============================
+#Remove duplicate length rows for species-date-catch combinations
+distinct(across(c(SampleDate, StationCode, CommonName, ForkLength)),.keep_all = T)%>%
+group_by(SampleDate, StationCode, CommonName)%>%
+  add_tally(name="TotalMeasured")%>%
+  group_by(SampleDate, StationCode, CommonName, ForkLength)%>%
+  add_tally(name="LengthFrequency")%>%
+  mutate(LengthFrequency_Adjusted = max(1,round(Catch*(LengthFrequency/TotalMeasured),0)))%>%
+  filter(is.na(LengthFrequency_Adjusted)==F & is.na(Catch)==F)%>%
+  uncount(LengthFrequency_Adjusted)%>%select(-c(LengthFrequency,TotalMeasured))
 
 
 
 SLS_Tidy <- SLS_Tidy_All %>%   select(-c(Lat,Long,`TNS Field`:`MWT Field`,
                                          NetMeterCheck,CatchID,
-                                         Symbol,YolkSacorOilPresent,Notes,RKI,FishCode))%>%
-  add_column(LengthFrequency=1)
+                                         Symbol,YolkSacorOilPresent,Notes,RKI,FishCode))
 
 #For Checking variable compatibility with other data tables
 #names(SLS_Tidy)[which(is.na(match(names(SLS_Tidy),
 #                                  names(Primary_2000_Long))))]
 
-save(SLS_Tidy,file="TidyData/DATA_SLS_Tidy.rda")
+save(SLS_Tidy,file="TidyData/Individual Surveys/DATA_SLS_Tidy.rda")
   
+
+
