@@ -66,5 +66,14 @@ Wide_Data_2000 <- Wide_Data_All %>% filter(Year>1999)
 
 save(Wide_Data_2000,Wide_Data_All,file="TidyData/DATA_Wide_Spatial_Analysis.rda")
 
-write_csv(Wide_Data_All,file="all-years-wide-format.csv")
-write_csv(Wide_Data_All,file="since-2000-wide-format.csv")
+write_csv(Wide_Data_All,file="SpatialData/all-years-wide-format.csv")
+write_csv(Wide_Data_All,file="SpatialData/since-2000-wide-format.csv")
+
+
+table(All_Surveys_Species$Year,is.na(All_Surveys_Species$Start_Latitude))
+
+unique(All_Surveys_LF$StationCode)%>%length()
+
+unique(All_Surveys_LF$Survey_Station)%>%length()
+
+All_Surveys_Long %>% filter(ForkLength>1000)%>%view()
