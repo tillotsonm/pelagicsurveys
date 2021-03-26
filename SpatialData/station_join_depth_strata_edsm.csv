@@ -1,0 +1,211 @@
+Station_Latitude,Station_Longitude,StationCode,Region,SubRegion,strata_depth,category
+37.67917,-122.3125,101,,,,
+37.69361,-122.31306,102,,,,
+37.59028,-122.25972,103,,,,
+37.60556,-122.28472,104,,,,
+37.62444,-122.30111,105,,,,
+37.64583,-122.31389,106,,,,
+37.66806,-122.32611,107,,,,
+37.69167,-122.33889,108,,,,
+37.71167,-122.33944,109,,,,
+37.73333,-122.34528,110,,,,
+37.75417,-122.35083,111,,,,
+37.78583,-122.36111,112,,,,
+37.67917,-122.35833,113,,,,
+37.81861,-122.42139,201,,,,
+37.84722,-122.44722,202,,,,
+37.85778,-122.46972,203,,,,
+37.83417,-122.39639,204,,,,
+37.82778,-122.35833,205,,,,
+37.84389,-122.34111,206,,,,
+37.87,-122.345,207,,,,
+37.86528,-122.39861,208,,,,
+37.88972,-122.42222,209,,,,
+37.92139,-122.44,210,,,,
+37.94028,-122.44583,211,,,,
+37.98031,-122.41197,301,,,4,intermediate
+38.01389,-122.375,302,Far West,Mid San Pablo Bay,3,deep
+37.97219,-122.425,303,,,3,deep
+37.99581,-122.436,304,,,2,very deep
+37.9987,-122.4086,305,,,2,very deep
+38.00042,-122.41488,306,,,2,very deep
+38.00472,-122.4192,307,,,2,very deep
+38.01745,-122.40438,308,,,2,very deep
+38.01442,-122.39387,309,Far West,Mid San Pablo Bay,2,very deep
+38.0297,-122.37355,310,Far West,Mid San Pablo Bay,2,very deep
+38.02087,-122.37743,311,Far West,Mid San Pablo Bay,2,very deep
+38.01189,-122.432,312,,,3,deep
+38.02219,-122.449,313,,,4,intermediate
+38.02812,-122.41167,314,Far West,Mid San Pablo Bay,3,deep
+38.03815,-122.3936,315,Far West,Mid San Pablo Bay,3,deep
+38.06669,-122.427,316,,,4,intermediate
+37.99831,-122.449,317,,,3,deep
+38.05,-122.431,318,,,4,intermediate
+38.0775,-122.432,319,,,4,intermediate
+38.02361,-122.305,320,Far West,East San Pablo Bay,4,intermediate
+38.03612,-122.36103,321,Far West,Mid San Pablo Bay,2,very deep
+38.02363,-122.35078,322,Far West,Mid San Pablo Bay,3,deep
+38.04522434,-122.2847965,323,Far West,East San Pablo Bay,3,deep
+38.02853,-122.32817,323.1,Far West,Mid San Pablo Bay,4,intermediate
+38.05281,-122.319,324,Far West,East San Pablo Bay,2,very deep
+38.05605,-122.2955,325,Far West,East San Pablo Bay,2,very deep
+38.04038,-122.29592,326,Far West,East San Pablo Bay,4,intermediate
+38.04772,-122.36672,327,Far West,Mid San Pablo Bay,3,deep
+38.06010696,-122.3487722,328,Far West,Mid San Pablo Bay,4,intermediate
+38.06322372,-122.305483,329,Far West,East San Pablo Bay,4,intermediate
+38.05213419,-122.4117083,330,Far West,Mid San Pablo Bay,4,intermediate
+38.06531,-122.394,331,Far West,Mid San Pablo Bay,4,intermediate
+38.07331,-122.392,332,Far West,Mid San Pablo Bay,4,intermediate
+38.07311,-122.357,333,Far West,Mid San Pablo Bay,4,intermediate
+38.07573357,-122.3390148,334,Far West,Mid San Pablo Bay,4,intermediate
+38.07061094,-122.3242455,335,Far West,East San Pablo Bay,4,intermediate
+38.06237582,-122.2785809,336,Far West,East San Pablo Bay,2,very deep
+38.0595,-122.27232,337,Far West,East San Pablo Bay,2,very deep
+38.06003,-122.24892,338,Far West,Carquinez Strait,2,very deep
+38.0667,-122.2568,339,Far West,Carquinez Strait,2,very deep
+38.10016844,-122.2645616,340,Far West,Lower Napa River,3,deep
+38.12824971,-122.2801582,341,Far West,Lower Napa River,3,deep
+38.14622953,-122.288557,342,Far West,Lower Napa River,3,deep
+38.1825403,-122.3093659,343,Far West,Lower Napa River,4,intermediate
+38.21268263,-122.3086132,344,Far West,Upper Napa River,5,shallow
+38.22427835,-122.3080635,345,Far West,Upper Napa River,,
+38.23665995,-122.2870586,346,Far West,Upper Napa River,5,shallow
+38.25443088,-122.2838921,347,Far West,Upper Napa River,5,shallow
+38.27345322,-122.2843173,348,Far West,Upper Napa River,5,shallow
+38.28619872,-122.283688,349,Far West,Upper Napa River,,
+38.05758,-122.21245,401,Far West,Carquinez Strait,2,very deep
+38.06117,-122.06828,401.1,Far West,West Suisun Bay,2,very deep
+38.05561,-122.183,402,Far West,Carquinez Strait,2,very deep
+38.04883,-122.17192,403,Far West,Carquinez Strait,3,deep
+38.04645,-122.17887,404,Far West,Carquinez Strait,2,very deep
+38.03980365,-122.1486435,405,Far West,Carquinez Strait,3,deep
+38.03353,-122.15815,405.1,Far West,Carquinez Strait,2,very deep
+38.028,-122.15057,406,Far West,Carquinez Strait,2,very deep
+38.03298,-122.14515,407,Far West,Carquinez Strait,2,very deep
+38.03513,-122.12897,408,Far West,West Suisun Bay,2,very deep
+38.04455,-122.10637,409,Far West,West Suisun Bay,2,very deep
+38.04883,-122.09647,410,Far West,West Suisun Bay,2,very deep
+38.050756,-122.0798673,411,Far West,West Suisun Bay,3,deep
+38.06462,-122.06007,412,Far West,West Suisun Bay,2,very deep
+38.06595,-122.0473,413,West,Mid Suisun Bay,2,very deep
+38.05213,-122.11128,414,Far West,West Suisun Bay,2,very deep
+38.05678,-122.10772,415,Far West,West Suisun Bay,2,very deep
+38.0702,-122.09415,416,Far West,West Suisun Bay,2,very deep
+38.08075,-122.083,417,Far West,West Suisun Bay,2,very deep
+38.06617319,-122.0966635,418,Far West,West Suisun Bay,3,deep
+38.09383,-122.06973,418.1,Far West,West Suisun Bay,2,very deep
+38.10419,-122.058,419,West,Mid Suisun Bay,3,deep
+38.07293436,-122.0257881,501,West,Mid Suisun Bay,3,deep
+38.06167,-122.01955,501.1,West,Mid Suisun Bay,2,very deep
+38.08822222,-122.0035833,501.2,West,Mid Suisun Bay,2,very deep
+38.05997,-122.00397,502,West,Mid Suisun Bay,2,very deep
+38.06022,-121.9832,503,West,Mid Suisun Bay,2,very deep
+38.05319667,-121.9877575,504,West,Mid Suisun Bay,3,deep
+38.05945,-121.9767,504.1,West,Mid Suisun Bay,2,very deep
+38.06105556,-122.0137222,504.2,West,Mid Suisun Bay,2,very deep
+38.05713,-121.95597,505,West,Honker Bay,2,very deep
+38.05281,-121.944,506,West,Honker Bay,2,very deep
+38.05228,-121.939,507,West,Honker Bay,2,very deep
+38.04673727,-121.9173076,508,West,Honker Bay,2,very deep
+38.04547,-121.90412,509,West,Honker Bay,2,very deep
+38.04888,-121.88783,510,West,Lower Sacramento River,2,very deep
+38.0513,-121.88,511,West,Lower Sacramento River,2,very deep
+38.05638,-121.87722,512,West,Lower Sacramento River,2,very deep
+38.05869701,-121.8679923,513,West,Lower Sacramento River,2,very deep
+38.06389,-121.844,514,West,Lower Sacramento River,3,deep
+38.092,-122.01472,515,West,Mid Suisun Bay,3,deep
+38.07867,-121.99408,516,West,Mid Suisun Bay,3,deep
+38.07022,-121.97938,517,West,Mid Suisun Bay,3,deep
+38.06875,-121.96802,518,West,Honker Bay,3,deep
+38.07351878,-121.956625,519,West,Honker Bay,4,intermediate
+38.03249879,-121.8663313,520,West,Lower San Joaquin River,2,very deep
+38.1031,-122.0356,601,West,Mid Suisun Bay,3,deep
+38.11533863,-122.0438996,602,West,Mid Suisun Bay,4,intermediate
+38.11552,-122.04805,603,West,Mid Suisun Bay,4,intermediate
+38.12163,-122.05717,604,West,Mid Suisun Bay,4,intermediate
+38.14853,-122.05738,605,West,Suisun Marsh,3,deep
+38.16995682,-122.0255682,606,West,Suisun Marsh,3,deep
+38.18381,-121.967,607,West,Suisun Marsh,,
+38.0887,-121.88332,608,West,Suisun Marsh,3,deep
+38.16714186,-121.9379187,609,West,Suisun Marsh,3,deep
+38.12039144,-121.8891554,610,West,Suisun Marsh,,
+38.06505,-121.83475,701,West,Lower Sacramento River,2,very deep
+38.06111,-121.814,702,West,Lower Sacramento River,2,very deep
+38.0477912,-121.797112,703,West,Lower Sacramento River,4,intermediate
+38.06087,-121.79692,703.1,West,Lower Sacramento River,2,very deep
+38.06850996,-121.781838,704,West,Lower Sacramento River,2,very deep
+38.09618212,-121.7088067,705,North,Sacramento River near Rio Vista,3,deep
+38.07925,-121.7618,705.1,West,Lower Sacramento River,2,very deep
+38.08564151,-121.7505687,706,West,Lower Sacramento River,3,deep
+38.0903,-121.74,706.1,North,Sacramento River near Rio Vista,2,very deep
+38.11408363,-121.7077395,707,North,Sacramento River near Rio Vista,2,very deep
+38.12608,-121.6967,708,North,Sacramento River near Rio Vista,2,very deep
+38.14787,-121.69048,709,North,Sacramento River near Rio Vista,2,very deep
+38.162,-121.68228,710,North,Sacramento River near Rio Vista,2,very deep
+38.1775501,-121.6647462,711,North,Sacramento River near Rio Vista,3,deep
+38.19091017,-121.6401451,712,North,Upper Sacramento River,3,deep
+38.20675408,-121.6604452,713,North,Cache Slough and Liberty Island,2,very deep
+38.22433976,-121.6743119,715,North,Cache Slough and Liberty Island,2,very deep
+38.2384161,-121.6840582,716,North,Cache Slough and Liberty Island,2,very deep
+38.25786632,-121.6918348,716.1,North,Cache Slough and Liberty Island,3,deep
+38.17017,-121.63138,717,North,Sacramento River near Ryde,3,deep
+38.25755556,-121.7290278,718,North,Cache Slough and Liberty Island,3,deep
+38.3335785,-121.6474836,719,North,Cache Slough and Liberty Island,2,very deep
+38.26263889,-121.7792778,720,North,Cache Slough and Liberty Island,4,intermediate
+38.26836249,-121.7029961,721,North,Cache Slough and Liberty Island,4,intermediate
+38.23803251,-121.6725522,723,North,Cache Slough and Liberty Island,2,very deep
+38.23644131,-121.5587788,724,North,Sacramento River near Ryde,3,deep
+38.25625,-121.6520833,724.1,North,Cache Slough and Liberty Island,3,deep
+38.28305556,-121.6438333,726,North,Cache Slough and Liberty Island,3,deep
+38.33343,-121.56968,735,North,Upper Sacramento River,3,deep
+38.36737,-121.5214,736,North,Upper Sacramento River,3,deep
+38.56118333,-121.55618,794,North,Sacramento River Ship Channel,2,very deep
+38.53762086,-121.5846521,795,North,Sacramento River Ship Channel,2,very deep
+38.47368593,-121.584426,796,North,Sacramento River Ship Channel,2,very deep
+38.40467726,-121.6156062,797,North,Sacramento River Ship Channel,2,very deep
+38.04369444,-121.844,801,West,Lower San Joaquin River,3,deep
+38.05561,-121.847,801.1,West,Lower San Joaquin River,3,deep
+38.03427918,-121.8312431,802,West,Lower San Joaquin River,4,intermediate
+38.02219,-121.819,803,West,Lower San Joaquin River,2,very deep
+38.01734885,-121.7942485,804,West,Lower San Joaquin River,2,very deep
+38.02308,-121.79868,804.1,West,Lower San Joaquin River,2,very deep
+38.02683,-121.772,805,West,Lower San Joaquin River,3,deep
+38.02872,-121.7617,806,West,Lower San Joaquin River,2,very deep
+38.02995,-121.73203,807,West,Lower San Joaquin River,2,very deep
+38.03337,-121.71942,808,West,Lower San Joaquin River,2,very deep
+38.05289076,-121.6913901,809,South,San Joaquin River at Twitchell Island,2,very deep
+38.07083,-121.67622,810,South,San Joaquin River at Twitchell Island,2,very deep
+38.09742,-121.66487,811,South,San Joaquin River at Twitchell Island,2,very deep
+38.09011952,-121.6402209,812,South,San Joaquin River at Twitchell Island,3,deep
+38.08792,-121.64883,812.1,South,San Joaquin River at Twitchell Island,2,very deep
+38.09978,-121.62767,813,South,San Joaquin River at Twitchell Island,2,very deep
+38.10128,-121.6022,814,South,San Joaquin River at Prisoners Pt,2,very deep
+38.08374116,-121.5705043,815,South,San Joaquin River at Prisoners Pt,3,deep
+38.0913,-121.57587,815.1,South,San Joaquin River at Prisoners Pt,2,very deep
+38.05030831,-121.612569,901,South,Franks Tract,4,intermediate
+38.04625,-121.6185,901.1,South,Franks Tract,4,intermediate
+38.01987761,-121.5824489,902,South,Holland Cut,3,deep
+38.10628,-121.56747,903,South,North and South Forks Mokelumne River,4,intermediate
+38.07828,-121.56847,904,South,San Joaquin River at Prisoners Pt,2,very deep
+38.05953,-121.55573,905,South,San Joaquin River at Prisoners Pt,2,very deep
+38.05124976,-121.5088313,906,South,San Joaquin River at Prisoners Pt,4,intermediate
+38.0625,-121.50056,907,South,North and South Forks Mokelumne River,3,deep
+38.04308,-121.5298,908,South,San Joaquin River at Prisoners Pt,2,very deep
+38.02442,-121.46705,909,South,San Joaquin River near Stockton,2,very deep
+38.0031722,-121.4506943,910,South,San Joaquin River near Stockton,2,very deep
+37.99247,-121.40875,911,South,San Joaquin River near Stockton,2,very deep
+37.96656621,-121.368415,912,South,San Joaquin River near Stockton,2,very deep
+37.97012,-121.53705,913,South,Mildred Island,3,deep
+37.9715,-121.52,914,South,Mildred Island,3,deep
+37.94662,-121.53475,914.1,South,Middle River,3,deep
+37.94339153,-121.565701,915,South,Old River,5,shallow
+37.949,-121.55908,915.1,South,Old River,3,deep
+37.87919,-121.575,916,South,Victoria Canal,,
+37.87419,-121.52331,917,South,Victoria Canal,4,intermediate
+37.85917088,-121.5680414,918,South,Victoria Canal,,
+38.10506057,-121.4934942,919,South,North and South Forks Mokelumne River,4,intermediate
+38.14154927,-121.5044545,920,South,North and South Forks Mokelumne River,3,deep
+38.16530152,-121.493029,921,South,North and South Forks Mokelumne River,3,deep
+38.20453722,-121.4789778,922,South,North and South Forks Mokelumne River,4,intermediate
+38.13504133,-121.5646133,923,South,North and South Forks Mokelumne River,3,deep
+38.14039,-121.47947,925,South,North and South Forks Mokelumne River,3,deep

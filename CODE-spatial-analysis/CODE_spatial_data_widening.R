@@ -5,23 +5,21 @@
 #ICF
 #Created March 15, 2021
 
+require(tidyverse)
+require(lubridate)
+
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
 load("TidyData/DATA_All_Surveys_Tidy.rda")
 
 #Remove longer form tibbles
-rm(All_Surveys_LF,All_Surveys_Long)
 
-
+table(All_Surveys_Long$SurveySeason)
 
 #===Removing replicated tows by summing for catch and calulating a weighted
 #mean for average length
 
 Working <-  All_Surveys_Species %>%
-  group_by(SampleDate,StationCode,CommonName)%>%
-  mutate(RawCatch =sum(RawCatch,na.rm=T),
-         Mean_Length = weighted.mean(Mean_Length,RawCatch,na.rm = T))%>%
-  ungroup()%>%filter(TowNumber==1)%>%
   mutate(CommonName = recode(CommonName,"Age-0 Striped Bass" = "Striped Bass Age-0",
                              "Age 0-Striped Bass" = "Striped Bass Age 0",
                              "Age 1-Striped Bass" = "Striped Bass Age 1",
@@ -35,6 +33,10 @@ Working <-  All_Surveys_Species %>%
                              "Age-1 Striped Bass" = "Striped Bass Age 1",
                              "Age-2 Striped Bass" = "Striped Bass Adult",
                              "Striped Bass" = "Striped Bass Age-0"))%>%
+  group_by(SampleDate,Survey_Station,CommonName)%>%
+  mutate(RawCatch =sum(RawCatch),
+         Mean_Length = weighted.mean(Mean_Length,RawCatch,na.rm = T))%>%
+  ungroup()%>%distinct(across(c(SampleDate,Survey_Station,CommonName)),.keep_all = T)%>%
   select(c(1:21,ForkLength,WeightingFactor,CommonName,Mean_Length,RawCatch))%>%
   group_by(Survey_Station)%>%
   mutate(SpeciesAllTime = length(unique(CommonName)))%>%
@@ -43,6 +45,7 @@ Working <-  All_Surveys_Species %>%
   ungroup()%>%group_by(Survey_Station)%>%
   mutate(MeanSpeciesperYear = mean(SpeciesperYear))%>%
   select(-c(TowNumber,TemperatureBottom,SurveyNumber,JulianDay))
+
 
 #Set a threshold for how common a species should be to remain in the dataset
 #Currenlty using 0.1% representation of all-time catch as cutoff
@@ -61,19 +64,13 @@ Wide_Data_All <- Working %>% ungroup()%>%rename(Length = Mean_Length, Catch = Ra
   
 
 
-Wide_Data_2000 <- Wide_Data_All %>% filter(Year>1999)
+Wide_Data_2002 <- Wide_Data_All %>% filter(Year>2001)
 
 
 save(Wide_Data_2000,Wide_Data_All,file="TidyData/DATA_Wide_Spatial_Analysis.rda")
 
 write_csv(Wide_Data_All,file="SpatialData/all-years-wide-format.csv")
-write_csv(Wide_Data_All,file="SpatialData/since-2000-wide-format.csv")
+write_csv(Wide_Data_2002,file="SpatialData/since-2002-wide-format.csv")
 
 
-table(All_Surveys_Species$Year,is.na(All_Surveys_Species$Start_Latitude))
 
-unique(All_Surveys_LF$StationCode)%>%length()
-
-unique(All_Surveys_LF$Survey_Station)%>%length()
-
-All_Surveys_Long %>% filter(ForkLength>1000)%>%view()

@@ -11,20 +11,28 @@ require(lubridate)
 #Set working directory, adjust as needed
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
-
+#Read Survey data
 Survey <- read_csv("RawData/20mm/Survey.csv",col_types = "dDdc")%>%
   rename(Comment1 = Comments)
 
-Station <- read_csv("RawData/20mm/Station.csv",col_types = "ddfdddddddddddc")%>%
-  left_join(read_csv("RawData/20mm/20mm_Station_file.csv",col_types="fdd")[-1,],
-            by="Station")
+#Read station data and read/join with station lookup information
+Station <- read_csv("RawData/20mm/Station.csv",col_types = "ddddddddddddddc")%>%
+  left_join(read_csv("RawData/20mm/20mmStations.csv",col_types="dddddddfcfc"),
+            by="Station")%>%
+  mutate(Start_Longitude=-(LonDeg+LonMin/60+LonSec/3600),Start_Latitude=LatDeg+LatMin/60+LatSec/3600)%>%
+  select(-c(LatDeg:LonSec)) %>%
+  mutate(Station_Longitude=-(LonD+LonM/60+LonS/3600),Station_Latitude=LatD+LatM/60+LatS/3600)%>%
+  select(-c(LatD:LonS))%>%mutate(Station = as.factor(Station))
 
+#Read tow data
 Tow <- read_csv("RawData/20mm/Tow.csv",col_types = "ddddfddd")
 
+#Read gear data
 Gear <- read_csv("RawData/20mm/Gear.csv",col_types="dddddddc")%>%
   left_join(read_csv("RawData/20mm/GearCodesLkp.csv"),by="GearCode")%>%
   select(-GearCode)%>%rename(Comment2 = Comments)
 
+#Read tide lookup data
 luTide <- read_csv("RawData/SLS/luTide.csv",col_types = "ff")
 
 #Load and join fish FishSample, FishLength and FishCode data
@@ -37,6 +45,7 @@ FishSample <- read_csv("RawData/20mm/FishSample.csv")%>%
             `TNS Field`,Symbol,`MWT Field`,FishLengthID,
             ReleasedAlive))
 
+#Join all sheets based on database structure
 Tidy_20mm_all <- Survey %>% 
   right_join(Station, by ="SurveyID")%>%
   right_join(Tow,by="StationID")%>%
@@ -57,9 +66,6 @@ Tidy_20mm_all <- Survey %>%
          JulianDay = yday(SampleDate),
          Survey_Station = paste(SurveySeason,StationCode,sep="_"),
          .after="SampleDate")%>%
-  mutate(Start_Longitude=-(LonDeg+LonMin/60+LonSec/3600),Start_Latitude=LatDeg+LatMin/60+LatSec/3600,
-         MarkCode = as.factor(MarkCode),Dead = as.factor(Dead))%>%
-  select(-c(LatDeg:LonSec)) %>%
   select(-c(SurveyID))%>%filter(Gear=="Net")%>%
 #Remove duplicate length rows for species-date-catch combinations
 distinct(across(c(SampleDate, StationCode, CommonName, ForkLength)),.keep_all = T)%>%
@@ -71,13 +77,17 @@ group_by(SampleDate, StationCode, CommonName)%>%
   mutate(LengthFrequency_Adjusted = round(Catch*(LengthFrequency/TotalMeasured),0))%>%
   uncount(LengthFrequency_Adjusted)%>%select(-c(LengthFrequency,TotalMeasured))
 
+
   
 
 Tidy_20mm <- Tidy_20mm_all %>% 
   select(-c(StationID,TowID,Gear,
             GearDescription,Order,
-            SampleCode,FishCode,
-            MeterCheck,Active,GearID))
+            SampleCode,FishCode,RKI,
+            MeterCheck,Active,GearID,Notes
+            ))%>%
+  mutate(across(c("MarkCode","Dead"), as.factor))%>% 
+  rename("Area" = "AreaCode")
 
 save(Tidy_20mm,file="TidyData/Individual Surveys/DATA_20mm_Tidy.rda")
 

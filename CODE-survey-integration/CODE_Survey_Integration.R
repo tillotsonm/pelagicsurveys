@@ -56,34 +56,13 @@ All_Surveys_Long <- STN_FMWT_FLAdjusted%>%
          CommonName = str_to_title(CommonName),
          CommonName = as.factor(CommonName))
 
-All_Surveys_LF <- All_Surveys_Long %>% 
-  group_by(Survey_Station,SampleDate,TowNumber,CommonName,ForkLength)%>%
-  mutate(LengthFrequency = n())%>%ungroup()%>%
-  group_by(Survey_Station,SampleDate,TowNumber,CommonName)%>%
-  mutate(RawCatch=n())%>%ungroup()%>%
-  distinct(across(c(Survey_Station,SampleDate,TowNumber,CommonName,ForkLength)),.keep_all = TRUE)%>%
-  mutate(ForkLength = na_if(ForkLength,0))%>%select(-Catch)
-
-All_Surveys_Species <- All_Surveys_LF %>%
-  group_by(Survey_Station,SampleDate,TowNumber,CommonName,ForkLength)%>%
-  mutate(Mean_Length = mean(ForkLength,na.rm = T))%>%ungroup%>%
-  distinct(across(c(Survey_Station,SampleDate,TowNumber,CommonName)),.keep_all = TRUE)%>%
-  select(-LengthFrequency)
-
-table(All_Surveys_Long$SurveySeason)
-
-All_2000_Long <- All_Surveys_Long %>% filter(Year > 1999)
-
-All_2000_LF <- All_Surveys_LF %>% filter(Year > 1999)
-
-All_2000_Species <- All_Surveys_Species %>% filter(Year > 1999)
 
 
 
-save(All_Surveys_Long,All_Surveys_LF,All_Surveys_Species,
+
+save(All_Surveys_Long,
      file="TidyData/DATA_All_Surveys_Tidy.rda")
-save(All_2000_Long,All_2000_LF,All_2000_Species,
-     file="TidyData/DATA_All_2000_Tidy.rda")
+
 
 
 

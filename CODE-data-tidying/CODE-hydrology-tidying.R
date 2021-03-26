@@ -28,8 +28,8 @@ dayflow <- read_csv("RawData/Hydrology/dayflow-results-1997-2020.csv")%>%
 WYType <- read_csv("RawData/Hydrology/WYTypes.csv",
                    col_types = "dddddfddddfdddddd")
 
-Hyrdology_Daily <- dayflow %>% left_join(WYType,by="WaterYear")%>%
+Hydrology_Daily <- dayflow %>% left_join(WYType,by="WaterYear")%>%
   filter(Year>1958)
 
-save(WYType,file = "TidyData/Hydrology_Tidy.rda")
+save(Hydrology_Daily,file = "TidyData/DATA_Hydrology_Tidy.rda")
 
