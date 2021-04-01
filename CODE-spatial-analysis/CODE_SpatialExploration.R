@@ -14,7 +14,7 @@ conflict_prefer("filter","dplyr")
 
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
-load("TidyData/DATA_All_Surveys_Tidy.rda")
+load("MASTER_Data/MASTER_Long_Format.rda")
 
 
 #===============Delta Base Layer================================
@@ -26,7 +26,7 @@ EDSM_Strata <- st_read(
 
 
 
-All_Surveys_Long %>% distinct(across(c(SampleDate,SurveySeason,StationCode)),.keep_all = T)%>%
+Long_Master %>% distinct(across(c(SampleDate,SurveySeason,StationCode)),.keep_all = T)%>%
   group_by(StationCode)%>%mutate(n.surveys = length(unique(SurveySeason)))%>%ungroup()%>%
   filter(n.surveys>1)%>%
   mutate(Location_Flag = if_else(StationCode %in% c("504","724","405","411", "704",
@@ -35,11 +35,11 @@ All_Surveys_Long %>% distinct(across(c(SampleDate,SurveySeason,StationCode)),.ke
                                                     "703","705","706","711","716",
                                                     "723","801","901","914","804"),T,F))%>%
   ggplot(aes(x=SurveySeason,y=DepthBottom,fill=Location_Flag))+geom_boxplot()+scale_fill_viridis_d()+
-  facet_wrap_paginate(~StationCode,ncol = 6, nrow = 5,page=1)
+  facet_wrap_paginate(~StationCode,ncol = 6, nrow = 5,page=2)
 
-stations_compare_long <- All_Surveys_Long %>% 
+stations_compare_long <- Long_Master %>% 
   distinct(across(c(Station_Longitude,Station_Latitude,Survey_Station)),.keep_all = T)%>%
-  filter(is.na(Station_Latitude)==F)%>%select(c(Station_Longitude,Station_Latitude,Survey_Station))%>%
+  filter(is.na(Station_Latitude)==F)%>%select(c(Station_Longitude,Station_Latitude,Survey_Station,SubRegion))%>%
   separate(Survey_Station,into=c("Survey","StationNum"),sep="_",remove = F)%>%
   mutate_at(c("Survey_Station","Survey","StationNum"),as.factor)
 
@@ -58,9 +58,13 @@ coord_ranges <- stations_compare_long%>%group_by(StationNum)%>%
 
 
 
-stations <- stations_compare_long%>%filter(StationNum %in% coord_ranges$StationNum) %>%
+all.stations <- stations_compare_long%>%filter(StationNum %in% coord_ranges$StationNum) %>%
                                              st_as_sf( coords = c("Station_Longitude", "Station_Latitude"), 
                   crs = 4326, agr = "constant")
+
+all.stations <- stations_compare_long%>%
+  st_as_sf( coords = c("Station_Longitude", "Station_Latitude"), 
+            crs = 4326, agr = "constant")
 
 
 stations.1 <- stations_compare_long%>%filter(StationNum %in% coord_ranges$StationNum) %>%
@@ -127,20 +131,37 @@ ggplot()+geom_sf(data = marsh, size = .5, color = "black", fill = "aquamarine2")
 
 dev.off()
 
-#
-Station_Summary <-stations_compare_long%>%
-  mutate(StationNum = if_else(StationNum=="724"&Survey=="20mm","724.1",as.character(StationNum)))%>%
-  mutate(StationNum = if_else(StationNum=="901"&Survey=="STN","901.1",as.character(StationNum)))%>%
-  mutate(StationNum = if_else(StationNum=="901"&Survey=="20mm","901.2",as.character(StationNum)))%>%
-  mutate(StationNum = if_else(StationNum=="915"&Survey=="FMWT","915.1",as.character(StationNum)))%>%
-  mutate(StationNum = if_else(StationNum=="914"&Survey=="FMWT","914.1",as.character(StationNum)))%>%
-  mutate(StationNum = if_else(StationNum=="705"&Survey=="FMWT","705.1",as.character(StationNum)))%>%
-  mutate(StationNum = if_else(StationNum=="703"&Survey=="FMWT","703.1",as.character(StationNum)))%>%
-  mutate(StationNum = if_else(StationNum=="323"&Survey=="FMWT","323.1",as.character(StationNum)))%>%
-  mutate(StationNum = if_else(StationNum=="501"&Survey=="FMWT","501.1",as.character(StationNum)))%>%
-  select(-c(Survey,Survey_Station))%>%distinct()
+#===========Map All Stations==========================
 
-write.csv(Station_Summary,file="CODE-spatial-analysis/Station_Locations_Preliminary.csv",row.names = F)
+
+all.stations <- stations_compare_long%>%
+  st_as_sf( coords = c("Station_Longitude", "Station_Latitude"), 
+            crs = 4326, agr = "constant")
+
+
+ggplot()+geom_sf(data = marsh, size = .5, color = "black", fill = "aquamarine2") + 
+  geom_sf(data = EDSM_Strata, size = 1, color = "darkgreen",fill=NA) + 
+  ggtitle("Stations 901-915") + 
+  geom_sf(data = all.stations%>%filter(), size = 4,  aes(col=Survey,shape = Survey,fill=Survey), alpha=.75)+
+  coord_sf(xlim = c(-122.5, -121.25), ylim = c(37.5, 38.6), expand = FALSE)+
+  scale_shape_manual(values=c(21,22,23,24,25))+
+  ggspatial::annotation_scale(location = 'bl')
+
+
+#=========Map stations without EDSM Region
+NASR.stations <- stations_compare_long%>%filter(is.na(SubRegion)==T)%>%
+  st_as_sf( coords = c("Station_Longitude", "Station_Latitude"), 
+            crs = 4326, agr = "constant")
+
+
+ggplot()+geom_sf(data = marsh, size = .5, color = "black", fill = "aquamarine2") + 
+  geom_sf(data = EDSM_Strata, size = 1, color = "darkgreen",fill=NA) + 
+  ggtitle("Stations 901-915") + 
+  geom_sf(data = NASR.stations%>%filter(), size = 4,  aes(col=Survey,shape = Survey,fill=Survey), alpha=.75)+
+  coord_sf(xlim = c(-122.5, -121.25), ylim = c(37.5, 38.6), expand = FALSE)+
+  scale_shape_manual(values=c(21,22,23,24,25))+
+  ggspatial::annotation_scale(location = 'bl')
+
 
 
 stationDist <- stations%>%

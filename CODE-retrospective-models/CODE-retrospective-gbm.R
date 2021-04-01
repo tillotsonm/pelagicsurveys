@@ -8,6 +8,7 @@ require(gbm)
 require(dismo)
 require(tidyverse)
 require(randomForest)
+require(lubridate)
 
 
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
@@ -17,6 +18,11 @@ load("TidyData/DATA_Hydrology_tidy.rda")
 region_classifiers <- read_csv("SpatialData/station_join_depth_strata_edsm.csv",
                                col_types = "ddfffff")%>%
   rename("StationCode" = "StationNum")%>%select(-c(Station_Longitude,Station_Latitude))
+
+
+
+
+
 
 Working <-  All_Surveys_Species %>%
   mutate(CommonName = recode(CommonName,"Age-0 Striped Bass" = "Striped Bass Age 0",
@@ -76,7 +82,6 @@ Data_Species <- Working %>% ungroup()%>%rename(Length = Mean_Length, Catch = Raw
 
 
 
-
 Data_Wide <- Data_Species %>% ungroup()%>%
   pivot_wider(names_from = CommonName,names_sep = "_",values_from = c(Catch,Length))%>%
   select(-c(ForkLength,WindDirection))%>%filter(is.na(Station_Latitude)==FALSE)%>%
@@ -96,7 +101,7 @@ Data_Wide <- Data_Species %>% ungroup()%>%
   #===================Important Filtering Steps to Review===============================
 filter(Year>1999 & is.na(Region)==F)
   
-names(Data_Wide)
+
   
 Data_Wide <- Data_Wide %>% mutate(SurveySeason = as.factor(SurveySeason))%>%data.frame()
   
