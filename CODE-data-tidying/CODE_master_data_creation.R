@@ -14,6 +14,8 @@
 #Load libraries:
 require(ggforce)
 require(tidyverse)
+require(lubridate)
+
 
 
 #Set working directory
@@ -21,11 +23,15 @@ setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
 #Load tidied catch data
 load("TidyData/DATA_All_Surveys_Tidy.rda")
-
+CDFW_Surveys_Long <- All_Surveys_Long
+rm(All_Surveys_Long)
 
 #Load hydrology data
 load("TidyData/DATA_Hydrology_tidy.rda")
  
+
+#Load tidied additional survey data
+load("TidyData/Tidy_Non_CDFW_Surveys_Long.rda")
 
 #Load environmental data
 
@@ -58,7 +64,8 @@ Environment_Master <- read_csv("RawData/Environmental Data/Delta_integrated_WQ.c
   mutate(StationCode = if_else(StationCode=="330"&Survey=="FMWT","330.1",as.character(StationCode)))%>%
   select(-Source)%>%mutate(StationCode = as.factor(StationCode))%>%
   mutate(SubRegion = replace_na(as.character(SubRegion),"SF and Outer SP Bays"))%>%
-  mutate(SubRegion = as.factor(SubRegion))
+  mutate(SubRegion = as.factor(SubRegion),
+         Microcystis = as.character(Microcystis))
 
 
 #Load regional and depth classifications
@@ -68,6 +75,28 @@ region_classifiers <- read_csv("SpatialData/station_join_depth_strata_edsm.csv",
   rename("Depth_Cat" = "category")%>%
   mutate(SubRegion = replace_na(as.character(SubRegion),"SF and Outer SP Bays"))%>%
   mutate(SubRegion = as.factor(SubRegion))
+
+
+
+#=============Add SLS data to Environment Master===============
+SLS_Env <- CDFW_Surveys_Long %>% filter(SurveySeason=="SLS")%>%
+  distinct(across(c(SampleDate,TowNumber,StationCode)),.keep_all = T)%>%
+  select(SurveySeason:Waves)%>%
+  rename("Date" = "SampleDate",
+         "Survey" = "SurveySeason",
+         "Longitude" = "Station_Longitude",
+         "Latitude" = "Station_Latitude",
+         "Conductivity" ="ConductivityTop",
+         "Temperature" = "TemperatureTop",
+         "Time" = "TimeStart",
+         "Depth" = "DepthBottom"
+  )%>%  left_join(region_classifiers,by="StationCode")%>%
+select(-c(Year:JulianDay,SurveyNumber,TowDirection,TowNumber,Turbidity,CableOut,TemperatureBottom,Weather,
+          TimeStop:MeterDifference,TowDuration,strata_depth,WindDirection,ConductivityBottom,Waves))
+
+Environment_Master <- Environment_Master %>% add_row(SLS_Env)
+
+
 
 #Join environmental and hydrological data
 Environment_Hydrology <- Hydrology_Daily %>% 
@@ -79,24 +108,24 @@ Hydrology_Daily <- Hydrology_Daily %>% rename("SampleDate" ="Date")
 
 
 
-Working_Long <-  All_Surveys_Long %>%
+Working_Long <-  CDFW_Surveys_Long %>%
   #Drops three rows with NA common names
   filter(is.na(CommonName)==F)%>%
   #Condense redundant common names
   mutate(SurveySeason = as.factor(SurveySeason),
-         CommonName = recode(CommonName,"Age-0 Striped Bass" = "Striped Bass Age 0",
-                             "Age 0-Striped Bass" = "Striped Bass Age 0",
-                             "Age 1-Striped Bass" = "Striped Bass Age 1",
-                             "Age 2-Striped Bass" = "Striped Bass Adult",
-                             "Striped Bass Age-2" = "Striped Bass Adult",
-                             "Striped Bass Age-3+" = "Striped Bass Adult",
-                             "Striped Bass Age-0" = "Striped Bass Age 0",
-                             "Striped Bass Age-1" = "Striped Bass Age 1",
-                             "Striped Bass Age 2" = "Striped Bass Adult",
-                             "Age-0 Striped Bass" = "Striped Bass Age 0",
-                             "Age-1 Striped Bass" = "Striped Bass Age 1",
-                             "Age-2 Striped Bass" = "Striped Bass Adult",
-                             "Striped Bass" = "Striped Bass Age 0",
+         CommonName = recode(CommonName,"Age-0 Striped Bass" = "Striped Bass",
+                             "Age 0-Striped Bass" = "Striped Bass",
+                             "Age 1-Striped Bass" = "Striped Bass",
+                             "Age 2-Striped Bass" = "Striped Bass",
+                             "Striped Bass Age-2" = "Striped Bass",
+                             "Striped Bass Age-3+" = "Striped Bass",
+                             "Striped Bass Age-0" = "Striped Bass",
+                             "Striped Bass Age-1" = "Striped Bass",
+                             "Striped Bass Age 2" = "Striped Bass",
+                             "Age-0 Striped Bass" = "Striped Bass",
+                             "Age-1 Striped Bass" = "Striped Bass",
+                             "Age-2 Striped Bass" = "Striped Bass",
+                             "Striped Bass" = "Striped Bass",
                              "Crangon Shrimp" = "Crangon",
                              "Palaemon Spp." = "Palaemon",
                              "Palaemon Shrimp" = "Palaemon",
@@ -164,10 +193,20 @@ Working_Long <-  All_Surveys_Long %>%
   
   #Remove taxa observed fewer than 10 times
   mutate%>%group_by(CommonName)%>%add_tally()%>%filter(n>9)%>%ungroup()%>%select(-n)%>%
+  
+  #Replace 0 lengths with NA
+  
+  mutate(ForkLength = na_if(ForkLength,0))%>%
 
   #add regional separations
   
-  left_join(region_classifiers,by="StationCode")
+  left_join(region_classifiers,by="StationCode")%>%
+  
+  #Correct Pacific herring species name
+ mutate(Species = recode(Species, "pallasi" = "pallasii"))%>% 
+  
+  #Remove supplementary SKT tows
+  filter(case_when(SurveySeason=="SKT" ~ SurveyNumber <8,T ~ SurveyNumber <40))
 
 
 #==Create Wide Format data by tow with species counts and mean lengths
@@ -254,8 +293,10 @@ Working_Station <- Working_Tow%>%
   Station_Master <- do.call(data.frame,lapply(Working_Station, function(x) replace(x, is.infinite(x),NA)))%>%
     arrange(-ConductivityTop_mean)
 
-  Long_Master <- Working_Long
-
+  
+  Long_Master <- Working_Long 
+ 
+ 
   Tow_Master <- Working_Tow%>%left_join(Hydrology_Daily,by=c("SampleDate","Year","Month","JulianDay"))%>%
     relocate(WaterYear:May8Riv,.after=JulianDay)
   
@@ -270,15 +311,64 @@ save(Tow_PresAbs,file ="MASTER_Data/MASTER_Tow_PresAbs.rda")
 save(Station_Master,file ="MASTER_Data/MASTER_Station.rda")
 
 save(Environment_Hydrology,file ="MASTER_Data/MASTER_Env_Hydro.rda")
-
-
-  
-Tow_Master %>% ggplot(aes(x=FishCatch))+geom_histogram(stat="density")+facet_wrap(~SubRegion)+xlim(c(0,200))
-  
  
+#====================================================================================
+#================================Add non-CDFW surveys================================
+
+#==========Create integrated long data frame with ALL surveys (CDFW+Others)
 
 
+All_Surveys_Master <- Long_Master %>% 
+  rename("Depth_Stratum" = "Depth_Cat")%>%
+  mutate(Volume = NA,
+         Core_Survey = TRUE,
+         Gear = recode(SurveySeason,
+                       "FMWT" = "MWTR",
+                       "SKT" = "Kodiak",
+                       "STN" = "Townet",
+                       "SLS" ="Egg and Larva Net"
+         ))%>%
+  select(SurveySeason,
+         StationCode,
+         Station_Latitude,
+         Station_Longitude,
+         SampleDate,
+         TowNumber,
+         Volume,
+         CommonName,
+         ForkLength,
+         Gear,
+         Year,
+         Month,
+         Region,
+         SubRegion,
+         Depth_Stratum,
+         Core_Survey)%>%
+  add_row(Additional_Surveys)%>%
+  mutate(Year = year(SampleDate),
+         Month = month(SampleDate))%>%
+  filter(Year>2001)%>%
+  #remove low effort months from surveys
+  filter(case_when(SurveySeason=="EDSM" ~ Month<4|Month>6,
+                   T ~ Month < 13))%>%
+  mutate(NetType = Gear)%>%
+  mutate(NetType = recode(NetType,
+                          "20mm" = "Pelagic Trawl",
+                          "Egg and Larva Net" = "Pelagic Trawl",
+                          "Kodiak" = "Pelagic Trawl",
+                          "Midwater trawl" = "Pelagic Trawl",
+                          "Tenera" = "Pelagic Trawl",
+                          "Otter" = "Bottom Trawl",
+                          "Otter trawl" = "Bottom Trawl",
+                          "SEIN" = "Beach Seine",
+                          "MWTR" = "Pelagic Trawl",
+                          "Townet" = "Pelagic Trawl",
+                          "Mamou" = "Pelagic Trawl"
+                          ))
 
+table(All_Surveys_Master$NetType)
 
+save(All_Surveys_Master,file =  "MASTER_Data/MASTER_All_Surveys.rda")
 
+unique()
                                                  
