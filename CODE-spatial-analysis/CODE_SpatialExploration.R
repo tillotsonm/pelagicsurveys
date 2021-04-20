@@ -35,7 +35,7 @@ Long_Master %>% distinct(across(c(SampleDate,SurveySeason,StationCode)),.keep_al
                                                     "703","705","706","711","716",
                                                     "723","801","901","914","804"),T,F))%>%
   ggplot(aes(x=SurveySeason,y=DepthBottom,fill=Location_Flag))+geom_boxplot()+scale_fill_viridis_d()+
-  facet_wrap_paginate(~StationCode,ncol = 6, nrow = 5,page=2)
+  facet_wrap_paginate(~StationCode,ncol = 6, nrow = 5,page=3)
 
 stations_compare_long <- Long_Master %>% 
   distinct(across(c(Station_Longitude,Station_Latitude,Survey_Station)),.keep_all = T)%>%

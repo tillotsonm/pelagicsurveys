@@ -45,10 +45,10 @@ SKT_Tidy_All <- Sample %>%
   left_join(luTide,by="TideRowID")%>%
   select(-TideRowID)%>%
   #Join with Catch Table
-  right_join(Catch,by="SampleRowID")%>%
+  full_join(Catch,by="SampleRowID")%>%
   left_join(luOrganism,by="OrganismCode")%>%
   #Join with Fish Info Table
-  right_join(Length,"CatchRowID")%>%
+  full_join(Length,"CatchRowID")%>%
   rename(Station = StationCode)%>%
   left_join(Station, by="Station")%>%
   rename(CODE = Sex)%>%
@@ -76,6 +76,10 @@ SKT_Tidy_All <- Sample %>%
   relocate(SurveyNumber, .after=Station_Latitude)%>%
   relocate(Survey_Station, .after=JulianDay)%>%
   add_column(TowNumber=1,.after = "SurveyNumber")%>%
+  #Create CommonName for No Catch Tows and correct Catch, LengthFrequency columns
+  mutate(CommonName = if_else(is.na(Catch)==T,"No Catch",as.character(CommonName)),
+         Catch = if_else(is.na(Catch)==T,1,Catch),
+         CommonName = as.factor(CommonName))%>%
   rename(Comment1 = SampleComments,
          Comment2 = CatchComments,
          Comment3 = Comments)%>%
@@ -88,6 +92,11 @@ SKT_Tidy_All <- Sample %>%
   add_tally(name="LengthFrequency")%>%
   mutate(LengthFrequency_Adjusted = round(Catch*(LengthFrequency/TotalMeasured),0))%>%
   uncount(LengthFrequency_Adjusted)%>%select(-c(LengthFrequency,TotalMeasured))
+
+table(SKT_Tidy_All$CommonName=="No Catch")
+
+
+
 
 SKT_Tidy <- SKT_Tidy_All %>%   select(-c(`2nd Stage`,CODE,LengthRowID,CatchRowID,SampleRowID,LengthRowID,
                                          `Sort Order`,FishID1,FishID2,AlternateName,Depth,

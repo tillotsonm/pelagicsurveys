@@ -37,7 +37,7 @@ luTide <- read_csv("RawData/SLS/luTide.csv",col_types = "ff")
 
 #Load and join fish FishSample, FishLength and FishCode data
 FishSample <- read_csv("RawData/20mm/FishSample.csv")%>%
-  right_join(read_csv("RawData/20mm/FishLength.csv",col_types="dddlldd"),by="FishSampleID")%>%
+  full_join(read_csv("RawData/20mm/FishLength.csv",col_types="dddlldd"),by="FishSampleID")%>%
   left_join(read_csv("RawData/20mm/FishCodes.csv"),by="FishCode")%>%
   rename(CommonName = `Common Name`)%>%
   mutate(Dead = !ReleasedAlive)%>%
@@ -47,13 +47,13 @@ FishSample <- read_csv("RawData/20mm/FishSample.csv")%>%
 
 #Join all sheets based on database structure
 Tidy_20mm_all <- Survey %>% 
-  right_join(Station, by ="SurveyID")%>%
-  right_join(Tow,by="StationID")%>%
-  right_join(Gear,"TowID")%>%
+  full_join(Station, by ="SurveyID")%>%
+  full_join(Tow,by="StationID")%>%
+  full_join(Gear,"TowID")%>%
   rename("TideRowID"="Tide")%>%#========Rename Tide Stage======
  left_join(luTide,by="TideRowID")%>%#=Replace tide code with factor text
   select(-TideRowID)%>%
-  right_join(FishSample,"GearID")%>%
+  full_join(FishSample,"GearID")%>%
   add_column(SurveySeason="20mm",.before = "SampleDate")%>%
   rename(StationCode = Station,TemperatureTop = Temp,
          ConductivityTop = TopEC, ConductivityBottom = BottomEC,
@@ -67,6 +67,10 @@ Tidy_20mm_all <- Survey %>%
          Survey_Station = paste(SurveySeason,StationCode,sep="_"),
          .after="SampleDate")%>%
   select(-c(SurveyID))%>%filter(Gear=="Net")%>%
+  #Create CommonName for No Catch Tows and correct Catch, LengthFrequency columns
+  mutate(CommonName = if_else(is.na(Catch)==T,"No Catch",as.character(CommonName)),
+         Catch = if_else(is.na(Catch)==T,1,Catch),
+         CommonName = as.factor(CommonName))%>%
 #Remove duplicate length rows for species-date-catch combinations
 distinct(across(c(SampleDate, StationCode, CommonName, ForkLength)),.keep_all = T)%>%
   #==================Deal with unmeasured fish==============================

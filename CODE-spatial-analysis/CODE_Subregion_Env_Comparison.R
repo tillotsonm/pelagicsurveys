@@ -18,7 +18,38 @@ setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
 load("MASTER_Data/MASTER_Env_Hydro.rda")
 
-Environment_Hydrology %>% distinct(across(c(WaterYear,SacWYType)))%>%with(.,table(SacWYType))
+ClusteringData <- Environment_Hydrology %>% 
+  mutate(StationCode = if_else(Survey=="EDSM",
+                               as.character(SubRegion),
+                               as.character(StationCode)))%>%
+  mutate(StationCode = as.factor(StationCode))%>%
+  filter(WaterYear>1970 & is.na(Salinity)==F)%>%
+  select(-c(SAC:SacIndex,SJWinter:May8Riv,Field_coords))%>%
+  mutate(DOWY = yday(Date-92))%>%
+  mutate(WYWeek = ceiling(DOWY/7))%>%
+  group_by(Survey,StationCode)%>%
+  mutate(Station_Latitude = mean(Latitude,na.rm=T),
+         Station_Longitude = mean(Longitude,na.rm=T)
+         )%>%
+  select(-c(Longitude,Latitude,Survey_Station))%>%
+  group_by(Survey,StationCode,Month)%>%
+  mutate(Monthly_Surveys)
+
+
+
+
+
+ClusteringData %>% group_by(Survey,StationCode,Month)%>%
+  dplyr::summarise(n())%>%view()
+
+length(unique(ClusteringData$StationCode))
+
+
+plot(ClusteringData$Conductivity,ClusteringData$Salinity)
+
+dat <- ClusteringData%>%select(c(Salinity,Conductivity))%>%drop_na()
+
+
 
 
 Env_Summary <-
@@ -41,9 +72,6 @@ Env_Summary <-
   drop_na()%>%
   ungroup()
 
-Env_Summary%>%
-  ggplot(aes(x=Date,y=Secchi_SD,col=SubRegion))+
-  geom_point()+geom_smooth()+ylim(c(0,300))
 
 
 for(i in 1:12){
@@ -66,6 +94,6 @@ env.dist <- Env_Summary %>%
 
 PMN1 <- adonis2(env.dist~SubRegion*Month,data=Env_Summary,permutations = 100)
 
-PWPMN1 <- pairwise.adonis(Env_Summary[,5:12],Env_Summary[,3])
 
-unique(as.character(Env_Summary[,3]))
+
+

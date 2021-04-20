@@ -66,9 +66,9 @@ SLS_Tidy_All <- Sample %>%
   rename("TideRowID"="Tide")%>%#========Rename Tide Stage======
   left_join(luTide,by="TideRowID")%>%#=Replace tide code with factor text
   select(-TideRowID)%>%
-  right_join(Catch,by=c("SampleDate","StationCode","TowNumber"))%>%#Join with Catch Table
+  full_join(Catch,by=c("SampleDate","StationCode","TowNumber"))%>%#Join with Catch Table
   left_join(luOrganism,by="FishCode")%>%
-  right_join(Length,by=c("SampleDate","StationCode","TowNumber","FishCode"))%>%
+  full_join(Length,by=c("SampleDate","StationCode","TowNumber","FishCode"))%>%
   left_join(Station, by="StationCode")%>%
   left_join(luWeightingFactors,by="StationCode")%>%
   rename(ForkLength = Length,WeightingFactor=`Wt Factor`,
@@ -82,6 +82,10 @@ SLS_Tidy_All <- Sample %>%
          JulianDay = yday(SampleDate),
          Survey_Station = paste(SurveySeason,StationCode,sep="_"),
          .after="SampleDate")%>%
+#Create CommonName for No Catch Tows and correct Catch, LengthFrequency columns
+mutate(CommonName = if_else(is.na(Catch)==T,"No Catch",as.character(CommonName)),
+         Catch = if_else(is.na(Catch)==T,1,Catch),
+         CommonName = as.factor(CommonName))%>%
   #==================Deal with unmeasured fish==============================
 #Remove duplicate length rows for species-date-catch combinations
 distinct(across(c(SampleDate, StationCode, CommonName, ForkLength)),.keep_all = T)%>%

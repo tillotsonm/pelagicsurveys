@@ -22,9 +22,8 @@ require(lubridate)
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
 #Load tidied catch data
-load("TidyData/DATA_All_Surveys_Tidy.rda")
-CDFW_Surveys_Long <- All_Surveys_Long
-rm(All_Surveys_Long)
+load("TidyData/DATA_CDFW_Surveys_Tidy.rda")
+
 
 #Load hydrology data
 load("TidyData/DATA_Hydrology_tidy.rda")
@@ -37,7 +36,7 @@ load("TidyData/Tidy_Non_CDFW_Surveys_Long.rda")
 
 Environment_Master <- read_csv("RawData/Environmental Data/Delta_integrated_WQ.csv",
                                col_types="cfffddlDddddfdddddddcfff")%>%
-  rename("Depth_Cat" = "category")%>%
+  dplyr::rename("Depth_Cat" = "category")%>%
   mutate(StationCode = if_else(StationCode=="724"&Survey=="20mm","724.1",as.character(StationCode)))%>%
   mutate(StationCode = if_else(StationCode=="716"&Survey=="SKT","716.1",as.character(StationCode)))%>%
   mutate(StationCode = if_else(StationCode=="716"&Survey=="SLS","716.1",as.character(StationCode)))%>%
@@ -62,6 +61,7 @@ Environment_Master <- read_csv("RawData/Environmental Data/Delta_integrated_WQ.c
   mutate(StationCode = if_else(StationCode=="815"&Survey=="FMWT","815.1",as.character(StationCode)))%>%
   mutate(StationCode = if_else(StationCode=="915"&Survey=="FMWT","915.1",as.character(StationCode)))%>%
   mutate(StationCode = if_else(StationCode=="330"&Survey=="FMWT","330.1",as.character(StationCode)))%>%
+  mutate(StationCode = if_else(StationCode=="711"&Survey=="FMWT","711.1",as.character(StationCode)))%>%
   select(-Source)%>%mutate(StationCode = as.factor(StationCode))%>%
   mutate(SubRegion = replace_na(as.character(SubRegion),"SF and Outer SP Bays"))%>%
   mutate(SubRegion = as.factor(SubRegion),
@@ -72,7 +72,7 @@ Environment_Master <- read_csv("RawData/Environmental Data/Delta_integrated_WQ.c
 region_classifiers <- read_csv("SpatialData/station_join_depth_strata_edsm.csv",
                                col_types="ddfffff")%>%
                       select(-c(Station_Longitude,Station_Latitude))%>%
-  rename("Depth_Cat" = "category")%>%
+  dplyr::rename("Depth_Cat" = "category")%>%
   mutate(SubRegion = replace_na(as.character(SubRegion),"SF and Outer SP Bays"))%>%
   mutate(SubRegion = as.factor(SubRegion))
 
@@ -82,7 +82,7 @@ region_classifiers <- read_csv("SpatialData/station_join_depth_strata_edsm.csv",
 SLS_Env <- CDFW_Surveys_Long %>% filter(SurveySeason=="SLS")%>%
   distinct(across(c(SampleDate,TowNumber,StationCode)),.keep_all = T)%>%
   select(SurveySeason:Waves)%>%
-  rename("Date" = "SampleDate",
+  dplyr::rename("Date" = "SampleDate",
          "Survey" = "SurveySeason",
          "Longitude" = "Station_Longitude",
          "Latitude" = "Station_Latitude",
@@ -94,7 +94,14 @@ SLS_Env <- CDFW_Surveys_Long %>% filter(SurveySeason=="SLS")%>%
 select(-c(Year:JulianDay,SurveyNumber,TowDirection,TowNumber,Turbidity,CableOut,TemperatureBottom,Weather,
           TimeStop:MeterDifference,TowDuration,strata_depth,WindDirection,ConductivityBottom,Waves))
 
-Environment_Master <- Environment_Master %>% add_row(SLS_Env)
+
+#Predict salinity from conductivity where missing
+Environment_Master <- Environment_Master %>% add_row(SLS_Env)%>%
+  mutate(Sal_Pred = predict(lm(Salinity ~ Conductivity + I(Conductivity^2),
+                               data=Environment_Master),newdata=Environment_Master%>% add_row(SLS_Env)))%>%
+  mutate(Salinity = if_else(is.na(Salinity)==T,Sal_Pred,Salinity))%>%
+  dplyr::select(-Sal_Pred)
+
 
 
 
@@ -102,9 +109,10 @@ Environment_Master <- Environment_Master %>% add_row(SLS_Env)
 Environment_Hydrology <- Hydrology_Daily %>% 
   full_join(Environment_Master,by="Date")%>%
   filter(is.na(StationCode)==F)%>%relocate("Time", .after = "Date")
+  
 
 #Rename date column for joining with catch data
-Hydrology_Daily <- Hydrology_Daily %>% rename("SampleDate" ="Date")
+Hydrology_Daily <- Hydrology_Daily %>% dplyr::rename("SampleDate" ="Date")
 
 
 
@@ -113,6 +121,7 @@ Working_Long <-  CDFW_Surveys_Long %>%
   filter(is.na(CommonName)==F)%>%
   #Condense redundant common names
   mutate(SurveySeason = as.factor(SurveySeason),
+         Area = NA,
          CommonName = recode(CommonName,"Age-0 Striped Bass" = "Striped Bass",
                              "Age 0-Striped Bass" = "Striped Bass",
                              "Age 1-Striped Bass" = "Striped Bass",
@@ -190,6 +199,8 @@ Working_Long <-  CDFW_Surveys_Long %>%
   mutate(StationCode = if_else(StationCode=="815"&SurveySeason=="FMWT","815.1",as.character(StationCode)))%>%
   mutate(StationCode = if_else(StationCode=="915"&SurveySeason=="FMWT","915.1",as.character(StationCode)))%>%
   mutate(StationCode = if_else(StationCode=="330"&SurveySeason=="FMWT","330.1",as.character(StationCode)))%>%
+  mutate(StationCode = if_else(StationCode=="711"&SurveySeason=="FMWT","711.1",as.character(StationCode)))%>%
+  mutate(StationCode = if_else(StationCode=="802"&SurveySeason=="FMWT","802.1",as.character(StationCode)))%>%
   
   #Remove taxa observed fewer than 10 times
   mutate%>%group_by(CommonName)%>%add_tally()%>%filter(n>9)%>%ungroup()%>%select(-n)%>%
@@ -206,7 +217,30 @@ Working_Long <-  CDFW_Surveys_Long %>%
  mutate(Species = recode(Species, "pallasi" = "pallasii"))%>% 
   
   #Remove supplementary SKT tows
-  filter(case_when(SurveySeason=="SKT" ~ SurveyNumber <8,T ~ SurveyNumber <40))
+  filter(case_when(SurveySeason=="SKT" ~ SurveyNumber <8,T ~ SurveyNumber <40))%>%
+  
+  #Correct flowmeter readings. Calculate difference where not reported, add
+  #1,000,000 when meter rolled over (i.e. Out < In)
+  mutate(MeterOut = if_else(MeterOut<MeterIn,MeterOut+1000000,MeterOut),
+         MeterDifference1 = MeterOut-MeterIn,
+         MeterDifference = if_else(MeterDifference<0|MeterDifference1>10000,
+                                   MeterDifference1,MeterDifference))%>%
+  mutate(MeterDifference = if_else(is.na(MeterDifference)==T,MeterDifference1,MeterDifference))%>%
+  select(-MeterDifference1)%>%
+  
+  #Calculate Tow Volume using standard General Oceanics model 2030R K 
+  #0.026873 and the following net opening areas:
+  #SLS = 0.37
+  #20mm = 1.51
+  #STN = 1.49
+  #FMWT= 10.7*0.8 assumes 80% door opening
+  #SKT = 13.95
+  mutate(NetArea = as.double(recode(SurveySeason, "20mm" = 1.51,
+                                        "FMWT" =  8.56,
+                                        "SKT" = 13.95,
+                                        "STN" = 1.49,
+                                        "SLS" =0.37)))%>%
+  mutate(Volume = MeterDifference*0.026873*NetArea)
 
 
 #==Create Wide Format data by tow with species counts and mean lengths
@@ -246,7 +280,8 @@ Working_Tow <- Working_Long %>%
                                                 Catch_Palaemon,
                                                 Catch_Dungeness_Crab))),
          FishCatch = TotalCatch - CrustaceanCatch - GelatenousCatch)%>%
-  relocate(c(TotalCatch:FishCatch),.after = MinLength)
+  relocate(c(TotalCatch:FishCatch),.after = MinLength)%>%
+  select(-c("Catch_No_Catch","Length_Var_No_Catch","Length_Mean_No_Catch"))
 
 #=====Replace Inf and NaN with NA
 Working_Tow[is.na(Working_Tow)] <- NA
@@ -320,7 +355,7 @@ save(Environment_Hydrology,file ="MASTER_Data/MASTER_Env_Hydro.rda")
 
 All_Surveys_Master <- Long_Master %>% 
   rename("Depth_Stratum" = "Depth_Cat")%>%
-  mutate(Volume = NA,
+  mutate(Area = NA,
          Core_Survey = TRUE,
          Gear = recode(SurveySeason,
                        "FMWT" = "MWTR",
@@ -335,6 +370,7 @@ All_Surveys_Master <- Long_Master %>%
          SampleDate,
          TowNumber,
          Volume,
+         Area,
          CommonName,
          ForkLength,
          Gear,
@@ -366,9 +402,7 @@ All_Surveys_Master <- Long_Master %>%
                           "Mamou" = "Pelagic Trawl"
                           ))
 
-table(All_Surveys_Master$NetType)
-
 save(All_Surveys_Master,file =  "MASTER_Data/MASTER_All_Surveys.rda")
 
-unique()
+
                                                  

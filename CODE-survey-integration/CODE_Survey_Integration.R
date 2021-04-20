@@ -17,17 +17,19 @@ load("TidyData/Individual Surveys/DATA_SLS_Tidy.rda")
 load("TidyData/Individual Surveys/DATA_20mm_Tidy.rda")
 
 
+
 STN_FMWT <- FMWT_Tidy%>%add_row(STN_Tidy)%>%
   filter(is.na(StationCode)==F)%>%
   select(-c(Phylum,Class,Order))%>%
   mutate(Station_Origin = SurveySeason)%>%
   add_column(ReproductiveStage=NA,Sex=NA)%>%
-  filter(LengthFrequency>0)%>%
+  filter(LengthFrequency>0|is.na(LengthFrequency)==T)%>%
   rowid_to_column("ID")%>%add_column(MeterSerial = NA)
 
 
 #==========Adjust length-frequencies for unmeasured fish===================
 MeasuredCounts <- STN_FMWT %>% 
+  mutate(ZeroLength = if_else(CommonName=="No Catch",FALSE,ZeroLength))%>%
   group_by(SampleDate,Survey_Station,TowNumber,CommonName)%>%
   mutate(TotalCount = sum(LengthFrequency))%>%
   mutate(TotalMeasured = sum(LengthFrequency[ZeroLength==FALSE]))%>%
@@ -40,13 +42,13 @@ STN_FMWT_FLAdjusted <- STN_FMWT %>%
   mutate(LengthFrequency_Adjusted = round(TotalCount*(LengthFrequency/TotalMeasured),0))%>%
   mutate(LengthFrequency_Adjusted = if_else(is.infinite(LengthFrequency_Adjusted),
                                             LengthFrequency,LengthFrequency_Adjusted))%>%
-  filter((ZeroLength==T&TotalMeasured==0|ZeroLength==F))%>%
-  #Might want to deal with these 17 NAs later on
+  mutate(LengthFrequency_Adjusted = if_else(CommonName=="No Catch",1,LengthFrequency_Adjusted))%>%
+  filter((ZeroLength==T&TotalMeasured==0|ZeroLength==F|CommonName=="No Catch"))%>%
   filter(is.na(LengthFrequency_Adjusted)==F)%>%
   uncount(LengthFrequency_Adjusted)%>%select(-c(TotalCount:TotalMeasured))
 
 
-All_Surveys_Long <- STN_FMWT_FLAdjusted%>%
+CDFW_Surveys_Long <- STN_FMWT_FLAdjusted%>%
   add_row(SKT_Tidy)%>%
   add_row(SLS_Tidy)%>%
   add_row(Tidy_20mm)%>%
@@ -58,10 +60,8 @@ All_Surveys_Long <- STN_FMWT_FLAdjusted%>%
 
 
 
-
-
-save(All_Surveys_Long,
-     file="TidyData/DATA_All_Surveys_Tidy.rda")
+save(CDFW_Surveys_Long,
+     file="TidyData/DATA_CDFW_Surveys_Tidy.rda")
 
 
 

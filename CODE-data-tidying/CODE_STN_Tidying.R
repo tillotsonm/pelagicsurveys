@@ -42,9 +42,10 @@ luWaves <- read_csv("RawData/STN/luWaves.csv",col_types = "ff")
 luWeather <- read_csv("RawData/STN/luWeather.csv",col_types = "ff")
 
 
-STN_Tidy_All <- Sample %>% right_join(TowEffort,by="SampleRowID")%>%
-  right_join(Catch,by="TowRowID")%>%
-  right_join(Length, by = "CatchRowID")%>%
+STN_Tidy_All <- Sample %>% 
+  full_join(TowEffort,by="SampleRowID")%>%
+  full_join(Catch,by="TowRowID")%>%
+  full_join(Length, by = "CatchRowID")%>%
   rename("TowDirectionID"="TowDirection")%>%#========Rename TowDirection======
   left_join(luTowDirection,by="TowDirectionID")%>%
   select(-TowDirectionID)%>%
@@ -55,7 +56,7 @@ STN_Tidy_All <- Sample %>% right_join(TowEffort,by="SampleRowID")%>%
   left_join(luMicrocystis,by="MicrocystisID")%>%
   select(-MicrocystisID)%>%
   rename("OrganismCodeSTN"="OrganismCode")%>%#========Add Taxonomy======
-  left_join(luOrganism,by="OrganismCodeSTN")%>%
+  left_join(luOrganism,by="OrganismCodeSTN",na_matches="never")%>%
   rename("WeatherCode" ="Weather")%>%#========Rename Weather======
   left_join(luWeather,by="WeatherCode")%>%
   select(-WeatherCode)%>%
@@ -80,7 +81,6 @@ STN_Tidy_All <- Sample %>% right_join(TowEffort,by="SampleRowID")%>%
          End_Latitude=-(EndLatDegrees+EndLatMinutes/60+EndLatSeconds/3600))%>%
   select(-c(StartLatDegrees:EndLongSeconds))%>%
   select(-c(LatD_2019:LonS_2019,SampleRowID))%>%
-  filter(Catch>0)%>%
   rename("StationActive" = "Active.x",
          "SpeciesActive" = "Active.y")%>%
   mutate(ZeroLength=if_else(ForkLength==0,TRUE,FALSE))%>%
@@ -102,13 +102,18 @@ STN_Tidy_All <- Sample %>% right_join(TowEffort,by="SampleRowID")%>%
          "Turbidity" = "TurbidityTop",
          "OrganismCodeFMWT" = "OrganismCodeMWT")%>%
   add_column(TowDuration=NA,.after = "TowNumber")%>%
+  
+  #Create CommonName for No Catch Tows and correct Catch, LengthFrequency columns
+  mutate(CommonName = if_else(is.na(Catch)==T,"No Catch",CommonName),
+         Catch = if_else(is.na(Catch)==T,1,Catch),
+         LengthFrequency = if_else(is.na(Catch)==T,1,LengthFrequency),
+         CommonName = as.factor(CommonName))%>%
+  
   mutate_at(vars(Survey_Station,MarkCode,Dead,CommonName),as.factor)%>%
   mutate_at(vars(TimeStart:TimeStop,TowDuration),as.numeric)%>%
   relocate(SampleComments,.after=Comments)%>%
   relocate(TowComments,.after=Comments)
 
-STN_MetaData <- STN_Tidy_All%>%
-  select(-c(SampleComments,NetErrors:FieldsheetCorrected,TowComments,MeterEstimate))
 
 STN_Tidy <-  STN_Tidy_All%>%
   select(-c(CatchRowID,LengthRowID,StationRowID,OrganismRowID,UserName,NetErrors:FieldsheetCorrected,
@@ -119,10 +124,10 @@ STN_Tidy <-  STN_Tidy_All%>%
          Comment3 = SampleComments)
 
 
-save(STN_Tidy,file="TidyData/DATA_STN_Tidy.rda")
 
-names(STN_Tidy)
 
-data.frame(names(STN_Tidy),names(FMWT_Tidy)[1:55])
+save(STN_Tidy,file="TidyData/Individual Surveys/DATA_STN_Tidy.rda")
+
+
 
 

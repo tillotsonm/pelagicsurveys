@@ -76,8 +76,14 @@ mutate(Start_Longitude=-(StartLongDegrees+StartLongMinutes/60+StartLongSeconds/3
        End_Latitude=-(EndLatDegrees+EndLatMinutes/60+EndLatSeconds/3600))%>%
   select(-c(StartLatDegrees:EndLongSeconds))%>%
   select(-WaveCode)%>%
-  right_join(Catch,by="SampleRowID")%>%
-  right_join(Length,by="CatchRowID")%>%
+  
+#Join to catch table
+  full_join(Catch,by="SampleRowID")%>%
+  
+#Join to length table
+  full_join(Length,by="CatchRowID")%>%
+  
+#Join to station table
   left_join(Station,Station,by="StationCode")%>%
   left_join(luAreaWeights,by="StationCode")%>%
   #========Add Taxonomy======
@@ -87,7 +93,14 @@ left_join(luOrganism,by="OrganismCode")%>%
          Month=month(SampleDate),
          JulianDay = yday(SampleDate),
          Survey_Station = paste(SurveySeason,StationCode,sep="_"),
-         .after="SampleDate")%>% filter(is.na(LengthFrequency)==F)%>%
+         .after="SampleDate")%>% 
+  
+#Create CommonName for No Catch Tows and correct Catch, LengthFrequency columns
+mutate(CommonName = if_else(is.na(Catch)==T,"No Catch",CommonName),
+       Catch = if_else(is.na(Catch)==T,1,Catch),
+       LengthFrequency = if_else(is.na(Catch)==T,1,LengthFrequency))%>%
+
+#Rename a selection of variables
   rename("StationComments" = "Comments.x",
          "StationActive" = "Active.x",
          "SpeciesComment" =  "Comments.y",
@@ -116,7 +129,6 @@ left_join(luOrganism,by="OrganismCode")%>%
   mutate(OrderNum = as.numeric(OrderNum))
   
 
-
 #=========
 # FMWT_Tidy_All$Dead[FMWT_Tidy_All$Dead=="n/p"] <- NA
 # FMWT_Tidy_All$MarkCode[FMWT_Tidy_All$MarkCode=="n/p"] <- NA
@@ -131,7 +143,7 @@ FMWT_Tidy <- FMWT_Tidy_All %>%
          Comment2 = SpeciesComment)%>%
   add_column(Comment3=NA)
 
-save(FMWT_Tidy,file="TidyData/DATA_FMWT_Tidy.rda")
+save(FMWT_Tidy,file="TidyData/Individual Surveys/DATA_FMWT_Tidy.rda")
 
 
 
