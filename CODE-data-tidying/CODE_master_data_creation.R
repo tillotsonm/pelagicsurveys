@@ -21,6 +21,12 @@ require(lubridate)
 #Set working directory
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
+#Load age-length cutoffs
+cutoffs <- read_csv("CODE-data-tidying/Target_Species_Length_Cutoffs.csv")%>%
+  mutate(CommonName = as.factor(CommonName))%>%
+  mutate(CommonName = str_replace_all(CommonName, " ", "_"))
+
+
 #Load tidied catch data
 load("TidyData/DATA_CDFW_Surveys_Tidy.rda")
 
@@ -240,9 +246,32 @@ Working_Long <-  CDFW_Surveys_Long %>%
                                         "SKT" = 13.95,
                                         "STN" = 1.49,
                                         "SLS" =0.37)))%>%
-  mutate(Volume = MeterDifference*0.026873*NetArea)
+  mutate(Volume = MeterDifference*0.026873*NetArea)%>%
+  
+  #Add age cutoffs 
+  
+  left_join(cutoffs,by=c("CommonName","Month"))%>%
+  
+  #Caclulate tow depth from CableOut based on equations in TN2 Mitchell, Polansky and Newman 2018
+  
+  #Create variable for BlockHeight by survey
+  mutate(BlockHeight = as.numeric(recode(SurveySeason,
+                              "20mm" = 8.3,
+                              "FMWT" = 6.66,
+                              "STN" = 8.15,
+                              "SLS" = 6.66,
+                              "SKT" = 0)))%>%
+  #Replace 0 CableOut values with NA
+  mutate(CableOut = na_if(CableOut,0))%>%
+  
+  #Calculate TowDepth
+  mutate(TowDepth = CableOut * (3.93701/25)-BlockHeight)%>%
+  
+  #Remove BlockHeight and CableOut
+  select(-c(BlockHeight))
 
 
+#====================================================================================
 #==Create Wide Format data by tow with species counts and mean lengths
 
 Working_Tow <- Working_Long %>% 
@@ -335,23 +364,12 @@ Working_Station <- Working_Tow%>%
   Tow_Master <- Working_Tow%>%left_join(Hydrology_Daily,by=c("SampleDate","Year","Month","JulianDay"))%>%
     relocate(WaterYear:May8Riv,.after=JulianDay)
   
-  
-
-save(Long_Master,file ="MASTER_Data/MASTER_Long_Format.rda")
-
-save(Tow_Master,file ="MASTER_Data/MASTER_Tow_Catch.rda")
-
-save(Tow_PresAbs,file ="MASTER_Data/MASTER_Tow_PresAbs.rda")
-
-save(Station_Master,file ="MASTER_Data/MASTER_Station.rda")
-
-save(Environment_Hydrology,file ="MASTER_Data/MASTER_Env_Hydro.rda")
- 
+table(Long_Master$SurveySeason,Long_Master$Year,is.na(Long_Master$CableOut))
 #====================================================================================
 #================================Add non-CDFW surveys================================
 
 #==========Create integrated long data frame with ALL surveys (CDFW+Others)
-
+names(Long_Master)
 
 All_Surveys_Master <- Long_Master %>% 
   rename("Depth_Stratum" = "Depth_Cat")%>%
@@ -379,11 +397,21 @@ All_Surveys_Master <- Long_Master %>%
          Region,
          SubRegion,
          Depth_Stratum,
-         Core_Survey)%>%
+         Core_Survey,
+         WindDirection,
+         Secchi,
+         ConductivityTop,
+         TemperatureTop,
+         Turbidity,
+         Weather,
+         Waves,
+         Tide,
+         DepthBottom,
+         CableOut,
+         TowDepth)%>%
   add_row(Additional_Surveys)%>%
   mutate(Year = year(SampleDate),
          Month = month(SampleDate))%>%
-  filter(Year>2001)%>%
   #remove low effort months from surveys
   filter(case_when(SurveySeason=="EDSM" ~ Month<4|Month>6,
                    T ~ Month < 13))%>%
@@ -400,9 +428,26 @@ All_Surveys_Master <- Long_Master %>%
                           "MWTR" = "Pelagic Trawl",
                           "Townet" = "Pelagic Trawl",
                           "Mamou" = "Pelagic Trawl"
-                          ))
+                          ))%>%
+  mutate(CommonName = as.factor(CommonName))%>%
+  
+  #Add age cutoffs 
+  
+  left_join(cutoffs,by=c("CommonName","Month"))
+  
+
+
+Long_Master <- Long_Master %>% mutate(CommonName = as.factor(CommonName))
+
+save(Long_Master,file ="MASTER_Data/MASTER_Long_Format.rda")
+
+save(Tow_Master,file ="MASTER_Data/MASTER_Tow_Catch.rda")
+
+save(Tow_PresAbs,file ="MASTER_Data/MASTER_Tow_PresAbs.rda")
+
+save(Station_Master,file ="MASTER_Data/MASTER_Station.rda")
+
+save(Environment_Hydrology,file ="MASTER_Data/MASTER_Env_Hydro.rda")
 
 save(All_Surveys_Master,file =  "MASTER_Data/MASTER_All_Surveys.rda")
 
-
-                                                 

@@ -228,7 +228,6 @@ Additional_Surveys <- EDSM_Tidy %>%
 
 
 Additional_Surveys <- Additional_Surveys %>% 
-  filter(Year>2001)%>%
   group_by(CommonName,SurveySeason)%>%
   mutate(N=n())%>%
   ungroup()%>%

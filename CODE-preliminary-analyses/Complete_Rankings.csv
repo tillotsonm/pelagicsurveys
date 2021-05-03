@@ -1,0 +1,64 @@
+CommonName,TotalRank,N_Lists,LTMR_Demersal,LTMR_OpenWater
+American_Shad,111,6,Brackish Carp,Shads
+Arrow_Goby,31,4,NA,NA
+Bat_Ray,NA,NA,Brackish Carp,Marine
+Bay_Goby,39,4,Marine,Marine
+Bay_Pipefish,NA,NA,Marine,NA
+Big_Skate,NA,NA,Marine,NA
+Black_Bullhead,NA,NA,Brackish Carp,Freshwater
+Black_Crappie,NA,NA,Brackish Carp,Freshwater
+Bonyhead_Sculpin,NA,NA,Marine,NA
+Brown_Rockfish,NA,NA,Marine,NA
+Brown_Smoothhound,NA,NA,Marine,NA
+California_Grunion,NA,NA,NA,Marine
+California_Halibut,NA,NA,Halibut and Tonguefish,NA
+California_Lizardfish,NA,NA,Marine,NA
+Catfish_(Unid),20,2,NA,NA
+Centrarchid_(Unid),21.5,3,NA,NA
+California_Tonguefish,NA,NA,Halibut and Tonguefish,NA
+Chamaeleon_Goby,NA,NA,C Gobies,NA
+Channel_Catfish,46,4,Brackish Carp,NA
+Chinook_Salmon,78,6,NA,ESA
+Cheekspot_Goby,NA,NA,C Gobies,NA
+Common_Carp,NA,NA,Brackish Carp,Freshwater
+Delta_Smelt,109,6,Brackish Carp,ESA
+Diamond_Turbot,NA,NA,Brackish Carp,NA
+English_Sole,NA,NA,Marine,Marine
+Inland_Silverside,74,6,NA,NA
+Jacksmelt,20.5,4,NA,Marine
+Leopard_Shark,NA,NA,Brackish Carp,NA
+Longfin_Smelt,138,6,LFS,ESA
+Mississippi_Silverside,34,4,Brackish Carp,Freshwater
+Night_Smelt,NA,NA,NA,Marine
+Northern_Anchovy,103,6,NA,Marine
+Pacific_Sardine,NA,NA,NA,Marine
+Pacific_Herring,139,6,Brackish Carp,Marine
+Pacific_Pompano,NA,NA,NA,Marine
+Pacific_Stagnorn_Sculpin,NA,NA,Marine,Freshwater
+Pacific_Sanddab,NA,NA,Marine,NA
+Pacific_Tomcod,NA,NA,Marine,NA
+Plainfin_Midshipman,17,3,Marine,Marine
+Prickly_Sculpin,123,6,Brackish Carp,Freshwater
+Sacramento_Sucker,NA,NA,Brackish Carp,Freshwater
+Saddleback_Gunnel,NA,NA,Marine,NA
+Sand_Sole,NA,NA,Marine,NA
+Shimofuri_Goby,61,6,S Gobies,Freshwater
+Shiner_Perch,NA,NA,Marine,Marine
+Shokihaze_Goby,30.5,5,S Gobies,NA
+Tridentiger_Spp.,135,6,S Gobies,NA
+Steelhead,10,2,NA,NA
+Showy_Snailfish,NA,NA,Marine,NA
+Speckled Sanddab,NA,NA,Marine,NA
+Splittail,36.5,6,Brackish SB,Freshwater
+Starry_Flounder,12,2,Brackish SB,Freshwater
+Striped_Bass_Age_0,133,6,Brackish SB,Freshwater
+Striped_Bass_Age_1,38.5,3,Brackish SB,Freshwater
+Threadfin_Shad,124,6,Brackish Carp,Shads
+Threespine_Stickleback,44.5,4,Brackish Carp,Freshwater
+Topsmelt,20.5,4,NA,Topsmelt
+Tule_Perch,NA,NA,Brackish SB,Freshwater
+Walleye_Surfperch,NA,NA,Brackish Carp,Marine
+White_Catfish,67,4,S Gobies,Freshwater
+White_Croaker,NA,NA,Marine,Marine
+White_Sturgeon,NA,NA,Brackish Carp,NA
+Yellowfin_Goby,115,6,Brackish Carp,Freshwater
