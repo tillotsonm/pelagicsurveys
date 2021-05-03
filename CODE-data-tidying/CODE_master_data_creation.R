@@ -232,7 +232,7 @@ Working_Long <-  CDFW_Surveys_Long %>%
          MeterDifference = if_else(MeterDifference<0|MeterDifference1>10000,
                                    MeterDifference1,MeterDifference))%>%
   mutate(MeterDifference = if_else(is.na(MeterDifference)==T,MeterDifference1,MeterDifference))%>%
-  select(-MeterDifference1)%>%
+  #select(-MeterDifference1)%>%
   
   #Calculate Tow Volume using standard General Oceanics model 2030R K 
   #0.026873 and the following net opening areas:
@@ -241,12 +241,14 @@ Working_Long <-  CDFW_Surveys_Long %>%
   #STN = 1.49
   #FMWT= 10.7*0.8 assumes 80% door opening
   #SKT = 13.95
+  
   mutate(NetArea = as.double(recode(SurveySeason, "20mm" = 1.51,
                                         "FMWT" =  8.56,
                                         "SKT" = 13.95,
                                         "STN" = 1.49,
                                         "SLS" =0.37)))%>%
   mutate(Volume = MeterDifference*0.026873*NetArea)%>%
+  
   
   #Add age cutoffs 
   
@@ -271,106 +273,106 @@ Working_Long <-  CDFW_Surveys_Long %>%
   select(-c(BlockHeight))
 
 
+table(CDFW_Surveys_Long$CommonName,CDFW_Surveys_Long$SurveySeason)
 #====================================================================================
 #==Create Wide Format data by tow with species counts and mean lengths
 
-Working_Tow <- Working_Long %>% 
-  ungroup()%>%
-  distinct(across(c(Survey_Station,SampleDate,TowNumber,CommonName,ForkLength)),.keep_all = TRUE)%>%
-  mutate(ForkLength = na_if(ForkLength,0))%>%
-  group_by(Survey_Station,SampleDate,TowNumber,CommonName)%>%
-  mutate(Length_Mean = mean(ForkLength,na.rm = T),
-         Length_Var = var(ForkLength, na.rm=T))%>%
-  ungroup%>%
-  group_by(Survey_Station,SampleDate,TowNumber)%>%
-  mutate(MaxLength = max(ForkLength,na.rm = T),
-         Q75Length = quantile(ForkLength,.75,na.rm=T),
-         MedianLength = median(ForkLength, na.rm=T),
-         Q25Length = quantile(ForkLength,.25,na.rm=T),
-         MinLength = min(ForkLength, na.rm=T))%>%
-  ungroup()%>%
-  distinct(across(c(Survey_Station,SampleDate,TowNumber,CommonName)),.keep_all = TRUE)%>%
-  select(-c(LengthFrequency,Family:Species,ForkLength:Dead,ReproductiveStage:Sex,OrganismCodeFMWT,OrganismCategory))%>% 
-  ungroup()%>%
-  pivot_wider(names_from = CommonName,names_sep = "_",values_from = c(Catch,Length_Mean,Length_Var))%>%
-  mutate_at(vars(contains("Catch")), ~replace_na(., 0))%>%
-  mutate(TotalCatch = rowSums(select(.,contains("Catch"))),
-         GelatenousCatch = rowSums(select(.,c(  Catch_Jellyfish,
-                                                Catch_Maeotias,
-                                                Catch_Polyorchis,
-                                                Catch_Comb_Jelly_Or_Sea_Goosberry,
-                                                Catch_Pleurobrachia_Jellyfish,
-                                                Catch_Moon_Jelly,
-                                                `Catch_Jelly_(Unid)`,
-                                                Catch_Blackfordia_Virginica,
-                                                Catch_Scrippsia_Pacifica))),
-         CrustaceanCatch = rowSums(select(.,c(  Catch_Siberian_Prawn,
-                                                Catch_Crangon,
-                                                Catch_Palaemon,
-                                                Catch_Dungeness_Crab))),
-         FishCatch = TotalCatch - CrustaceanCatch - GelatenousCatch)%>%
-  relocate(c(TotalCatch:FishCatch),.after = MinLength)%>%
-  select(-c("Catch_No_Catch","Length_Var_No_Catch","Length_Mean_No_Catch"))
-
-#=====Replace Inf and NaN with NA
-Working_Tow[is.na(Working_Tow)] <- NA
-Working_Tow$MinLength[is.infinite(Working_Tow$MinLength)] <- NA
-Working_Tow$MaxLength[is.infinite(Working_Tow$MaxLength)] <- NA
+# Working_Tow <- Working_Long %>% 
+#   ungroup()%>%
+#   distinct(across(c(Survey_Station,SampleDate,TowNumber,CommonName,ForkLength)),.keep_all = TRUE)%>%
+#   mutate(ForkLength = na_if(ForkLength,0))%>%
+#   group_by(Survey_Station,SampleDate,TowNumber,CommonName)%>%
+#   mutate(Length_Mean = mean(ForkLength,na.rm = T),
+#          Length_Var = var(ForkLength, na.rm=T))%>%
+#   ungroup%>%
+#   group_by(Survey_Station,SampleDate,TowNumber)%>%
+#   mutate(MaxLength = max(ForkLength,na.rm = T),
+#          Q75Length = quantile(ForkLength,.75,na.rm=T),
+#          MedianLength = median(ForkLength, na.rm=T),
+#          Q25Length = quantile(ForkLength,.25,na.rm=T),
+#          MinLength = min(ForkLength, na.rm=T))%>%
+#   ungroup()%>%
+#   distinct(across(c(Survey_Station,SampleDate,TowNumber,CommonName)),.keep_all = TRUE)%>%
+#   select(-c(LengthFrequency,Family:Species,ForkLength:Dead,ReproductiveStage:Sex,OrganismCodeFMWT,OrganismCategory))%>% 
+#   ungroup()%>%
+#   pivot_wider(names_from = CommonName,names_sep = "_",values_from = c(Catch,Length_Mean,Length_Var))%>%
+#   mutate_at(vars(contains("Catch")), ~replace_na(., 0))%>%
+#   mutate(TotalCatch = rowSums(select(.,contains("Catch"))),
+#          GelatenousCatch = rowSums(select(.,c(  Catch_Jellyfish,
+#                                                 Catch_Maeotias,
+#                                                 Catch_Polyorchis,
+#                                                 Catch_Comb_Jelly_Or_Sea_Goosberry,
+#                                                 Catch_Pleurobrachia_Jellyfish,
+#                                                 Catch_Moon_Jelly,
+#                                                 `Catch_Jelly_(Unid)`,
+#                                                 Catch_Blackfordia_Virginica,
+#                                                 Catch_Scrippsia_Pacifica))),
+#          CrustaceanCatch = rowSums(select(.,c(  Catch_Siberian_Prawn,
+#                                                 Catch_Crangon,
+#                                                 Catch_Palaemon,
+#                                                 Catch_Dungeness_Crab))),
+#          FishCatch = TotalCatch - CrustaceanCatch - GelatenousCatch)%>%
+#   relocate(c(TotalCatch:FishCatch),.after = MinLength)%>%
+#   select(-c("Catch_No_Catch","Length_Var_No_Catch","Length_Mean_No_Catch"))
+# 
+# #=====Replace Inf and NaN with NA
+# Working_Tow[is.na(Working_Tow)] <- NA
+# Working_Tow$MinLength[is.infinite(Working_Tow$MinLength)] <- NA
+# Working_Tow$MaxLength[is.infinite(Working_Tow$MaxLength)] <- NA
 
 
 #========Convert to presence/absence=========================
 
 
-Tow_PresAbs <- Working_Tow %>% 
-  select(-contains("Length_Mean"))%>%
-  select(-contains("Length_Var"))%>%
-  mutate_at(vars(contains("Catch_")),~ifelse(.==0, 0, 1))
+# Tow_PresAbs <- Working_Tow %>% 
+#   select(-contains("Length_Mean"))%>%
+#   select(-contains("Length_Var"))%>%
+#   mutate_at(vars(contains("Catch_")),~ifelse(.==0, 0, 1))
 
 
 #Towards station level summaries
-Working_Station <- Working_Tow%>%
-  select(-c(SampleDate,Survey_Station,SurveyNumber,TemperatureTop,TemperatureBottom,
-                        Secchi,ConductivityBottom,CableOut:OrderNum,Station_Origin))%>%
-  select(-contains("Length_Mean"))%>%
-  select(-contains("Length_Var"))%>%
-  select(-contains("Catch_"))%>%
-  group_by(StationCode)%>%
-  mutate(N_Tows = n(),
-         Mean_Tows = round(N_Tows/length(unique(Year)),0))%>%
-  mutate(Surveys = paste(unique(SurveySeason),collapse=","),.after = StationCode)%>%
-  mutate(Station_Longitude = mean(Station_Longitude),Station_Latitude=mean(Station_Latitude))%>%
-  mutate(Location=paste(unique(Location),collapse=","))%>%
-  mutate(StationActive = if_else(any(StationActive)==T,T,F))%>%
-  select(-c(SurveySeason,Comment1:Comment3,MeterSerial,Q25Length,Q75Length,Area,WeightingFactor))%>%
-  relocate(c(StationCode,Surveys),.before=Year)%>%
-  group_by(StationCode,Surveys,Station_Longitude,Station_Latitude,
-           StationActive,Location,Region,SubRegion,strata_depth,Depth_Cat,N_Tows,Mean_Tows)%>%
-  summarise_all(list(min=min, max=max,mean=mean),na.rm=T)%>%
-  select(-c(Year_mean,Month_mean,JulianDay_mean))
-  
-  
-  Working_Station[is.na(Working_Station)] <- NA
+# Working_Station <- Working_Tow%>%
+#   select(-c(SampleDate,Survey_Station,SurveyNumber,TemperatureTop,TemperatureBottom,
+#                         Secchi,ConductivityBottom,CableOut:OrderNum,Station_Origin))%>%
+#   select(-contains("Length_Mean"))%>%
+#   select(-contains("Length_Var"))%>%
+#   select(-contains("Catch_"))%>%
+#   group_by(StationCode)%>%
+#   mutate(N_Tows = n(),
+#          Mean_Tows = round(N_Tows/length(unique(Year)),0))%>%
+#   mutate(Surveys = paste(unique(SurveySeason),collapse=","),.after = StationCode)%>%
+#   mutate(Station_Longitude = mean(Station_Longitude),Station_Latitude=mean(Station_Latitude))%>%
+#   mutate(Location=paste(unique(Location),collapse=","))%>%
+#   mutate(StationActive = if_else(any(StationActive)==T,T,F))%>%
+#   select(-c(SurveySeason,Comment1:Comment3,MeterSerial,Q25Length,Q75Length,Area,WeightingFactor))%>%
+#   relocate(c(StationCode,Surveys),.before=Year)%>%
+#   group_by(StationCode,Surveys,Station_Longitude,Station_Latitude,
+#            StationActive,Location,Region,SubRegion,strata_depth,Depth_Cat,N_Tows,Mean_Tows)%>%
+#   summarise_all(list(min=min, max=max,mean=mean),na.rm=T)%>%
+#   select(-c(Year_mean,Month_mean,JulianDay_mean))
+#   
+#   
+#   Working_Station[is.na(Working_Station)] <- NA
   
   
   #===========================Convert working data to master and save======================================
           
-  Station_Master <- do.call(data.frame,lapply(Working_Station, function(x) replace(x, is.infinite(x),NA)))%>%
-    arrange(-ConductivityTop_mean)
-
-  
+  # Station_Master <- do.call(data.frame,lapply(Working_Station, function(x) replace(x, is.infinite(x),NA)))%>%
+  #   arrange(-ConductivityTop_mean)
+  # 
+  # 
   Long_Master <- Working_Long 
- 
- 
-  Tow_Master <- Working_Tow%>%left_join(Hydrology_Daily,by=c("SampleDate","Year","Month","JulianDay"))%>%
-    relocate(WaterYear:May8Riv,.after=JulianDay)
-  
-table(Long_Master$SurveySeason,Long_Master$Year,is.na(Long_Master$CableOut))
+  # 
+  # 
+  # Tow_Master <- Working_Tow%>%left_join(Hydrology_Daily,by=c("SampleDate","Year","Month","JulianDay"))%>%
+  #   relocate(WaterYear:May8Riv,.after=JulianDay)
+  # 
+
+
 #====================================================================================
 #================================Add non-CDFW surveys================================
 
 #==========Create integrated long data frame with ALL surveys (CDFW+Others)
-names(Long_Master)
-
 All_Surveys_Master <- Long_Master %>% 
   rename("Depth_Stratum" = "Depth_Cat")%>%
   mutate(Area = NA,
@@ -433,19 +435,17 @@ All_Surveys_Master <- Long_Master %>%
   
   #Add age cutoffs 
   
-  left_join(cutoffs,by=c("CommonName","Month"))
+  left_join(cutoffs,by=c("CommonName","Month"))%>%
+  
+  #convert volume to 1000s of cubic meters
+  
+  mutate(Volume = Volume/1000)
   
 
 
 Long_Master <- Long_Master %>% mutate(CommonName = as.factor(CommonName))
 
-save(Long_Master,file ="MASTER_Data/MASTER_Long_Format.rda")
-
-save(Tow_Master,file ="MASTER_Data/MASTER_Tow_Catch.rda")
-
-save(Tow_PresAbs,file ="MASTER_Data/MASTER_Tow_PresAbs.rda")
-
-save(Station_Master,file ="MASTER_Data/MASTER_Station.rda")
+save(Long_Master,file ="MASTER_Data/MASTER_CDFWSurveys_Long_Format.rda")
 
 save(Environment_Hydrology,file ="MASTER_Data/MASTER_Env_Hydro.rda")
 

@@ -3,10 +3,9 @@
 #Anlaysis
 
 #1) long format with all variables
-#2) tow-level with all variables, counts and mean lengths
+#2) tow-level with all variables, CPUV and mean lengths
 #)  tow-level with presence/absence binary
-#3) station-level with all variables
-#4) community matrix with all species
+#3) station-level 
 
 
 #Prepared by Michael Tillotson
@@ -16,7 +15,6 @@
 #Load libraries:
 require(tidyverse)
 require(lubridate)
-
 
 
 #Set working directory
@@ -65,6 +63,7 @@ Review_Enviro_Hydro <- Environment_Hydrology %>%
   mutate(Salinity_Pred = predict(lm(Salinity ~ Conductivity + I(Conductivity^2),
                                data=Environment_Hydrology),newdata = .))%>%
   mutate(Salinity = if_else(is.na(Salinity)==T&is.na(Salinity_Pred)==F,Salinity_Pred,Salinity))%>%
+  mutate(Salinity = if_else(Salinity <0,0,Salinity))%>%
   select(-c(Salinity_Pred,Conductivity))
 
 
@@ -135,6 +134,7 @@ Working_Data <- All_Surveys_Master %>%ungroup()%>%
   #Calculate salinity from conductivity where missing
   mutate(Salinity = predict(lm(Salinity ~ Conductivity + I(Conductivity^2),
                                data=Environment_Hydrology),newdata = .))%>%
+  mutate(Salinity = if_else(Salinity <0,0,Salinity))%>%
   ungroup()%>%
   
   #Add distinctions for fish vs. macroinverts
@@ -165,9 +165,9 @@ Working_Data <- All_Surveys_Master %>%ungroup()%>%
   mutate(Region = as.factor(Region))
 
 
+
 #Working Data contains all surveys including Non-CDFW and can be used as needed
 #Proceed to filter towards final CDFW dataset
-table(Working_Data_Review$CommonName,Working_Data_Review$SurveySeason)
 
 
 Working_Data_Review <- Working_Data %>%
@@ -179,7 +179,7 @@ Working_Data_Review <- Working_Data %>%
   group_by(SurveySeason,SampleDate,StationCode,TowNumber,CommonName)%>%
   mutate(Catch = n())%>%
   mutate(CPUV = Catch/Volume)%>%
-  mutate(CPUV = round(CPUV*1000,2))%>%
+  mutate(CPUV = round(CPUV,2))%>%
   ungroup()%>%
   select(-Catch)%>%
   mutate(CommonName = recode(CommonName,
@@ -211,8 +211,17 @@ Working_Data_Review <- Working_Data %>%
   mutate(Station_Longitude = mean(Station_Longitude,na.rm = T),
          Station_Latitude = mean (Station_Latitude,na.rm=T))%>%
   ungroup()%>%
-  mutate(SurveySeason = droplevels(SurveySeason))
-
+  mutate(SurveySeason = droplevels(SurveySeason))%>%
+  
+  #Remove likely volume calculation errors
+  mutate(VolCut = as.numeric(recode(SurveySeason,
+                                    "20mm" = .5,
+                                    "FMWT" = 2,
+                                    "STN" = .5,
+                                    "SLS" = .1,
+                                    "SKT" = 2)),.after=Volume)%>%
+  filter(Volume > VolCut)%>%
+  select(-VolCut)
 
 
 
@@ -228,9 +237,6 @@ Review_Data_Tows <- Working_Data_Review %>%select(-c(Age,ForkLength))%>%
   
   distinct(across(c("SampleDate","StationCode","SurveySeason","TowNumber")),.keep_all = T)
 
-
-tapply(Review_Data_Tows$CPUV_Pacific_Herring_Age_0,Review_Data_Tows$SurveySeason,sum)
-tapply(Review_Data_Tows$CPUV_Northern_Anchovy_Age_0,Review_Data_Tows$SurveySeason,sum)
 
 Review_Data_Long <- Working_Data_Review%>%filter(CommonName != "No_Catch")%>%
   mutate(CommonName = as.factor(CommonName))
