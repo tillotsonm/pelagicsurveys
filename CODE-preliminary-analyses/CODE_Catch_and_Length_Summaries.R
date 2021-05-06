@@ -11,15 +11,6 @@ Review_Data_Stations %>% filter(SurveySeason=="FMWT")%>%
   select(contains("CPUV"))%>%cor()
 
 
-Survey_Station_Clust <- Review_Data_Stations %>% 
-  mutate(Survey_Station = paste(SurveySeason,StationCode))%>%
-  column_to_rownames("Survey_Station")%>%
-  select(contains("CPUV"))%>%
-  .^(1/3) %>% scale() %>% dist()
-
-clusta <- hclust(Survey_Station_Clust)
-
-
 
 With_Cluster <- Review_Data_Stations %>% add_column(Cluster = as.vector(cutree(clusta,k=15)))
 
@@ -234,10 +225,16 @@ cpuv.plot.sls("CPUV_Other_Fish","other fish species")
 dev.off()
 
 
+Review_Data_Tows%>%
+  rename("Depth_Ft" = "Depth",
+         "TowDepth_ft" = "TowDepth",
+         "CableOut_ft" = "CableOut",
+         "Secchi_ft" = "Secchi",
+         "Volume_1000m3" = "Volume",
+         "Salinity_ppt" = "Salinity",
+         "Turbidity_ntu" = "Turbidity")%>%
+ write_csv(file="Pelagic_Review_Data.csv")
 
 
-write_csv(Review_Data_Tows,file="Pelagic_Review_Data.csv")
 
-
-
-
+table(Review_Data_Tows)

@@ -71,8 +71,8 @@ Tidy_20mm_all <- Survey %>%
   mutate(CommonName = if_else(is.na(Catch)==T,"No Catch",as.character(CommonName)),
          Catch = if_else(is.na(Catch)==T,1,Catch),
          CommonName = as.factor(CommonName))%>%
-#Remove duplicate length rows for species-date-catch combinations
-distinct(across(c(SampleDate, StationCode, CommonName, ForkLength)),.keep_all = T)%>%
+#Remove duplicate length rows for species-date-catch-Tow combinations
+distinct(across(c(SampleDate, StationCode, CommonName, ForkLength,TowNumber)),.keep_all = T)%>%
   #==================Deal with unmeasured fish==============================
 group_by(SampleDate, StationCode, CommonName)%>%
   add_tally(name="TotalMeasured")%>%

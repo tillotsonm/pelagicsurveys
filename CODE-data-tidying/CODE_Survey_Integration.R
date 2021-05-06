@@ -2,9 +2,8 @@
 #===========for unmeasured individuals and calculate CPUE============
 #Prepared by Michael Tillotson
 #ICF
-#Updated March 11, 2021
-#Currently incomplete. Integrates SKT, STN and FMWT, but does not include
-#20mm or SLS and does not have CPUE calculated.
+#Updated May 05, 2021
+
 require(tidyverse)
 require(stringr)
 

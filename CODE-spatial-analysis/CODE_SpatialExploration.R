@@ -1,20 +1,17 @@
-library("ggplot2")
-theme_set(theme_bw())
+
+
 library("sf")
-library("tidyverse")
 library("rnaturalearth")
 library("rnaturalearthdata")
 library("rnaturalearthhires")
 library("stringr")
 library("RColorBrewer")
 library("spatialEco")
-library("conflicted")
-conflict_prefer("select","dplyr")
-conflict_prefer("filter","dplyr")
+library("tidyverse")
 
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
-load("MASTER_Data/MASTER_Long_Format.rda")
+load("MASTER_Data/MASTER_All_Surveys.rda")
 
 
 #===============Delta Base Layer================================
@@ -94,7 +91,14 @@ pdf(file="Maps/Station Comparison Maps.pdf",10,10)
 
 #Plot station location discrepancies 1
 ggplot()+geom_sf(data = marsh, size = .5, color = "black", fill = "aquamarine2") + 
-  geom_sf(data = EDSM_Strata, size = 1, color = "darkgreen",fill=NA) + 
+  geom_sf(data = EDSM_Strata, size = 1, color = "darkgreen",aes(fill=Region),alpha=.25)+
+  geom_sf_label(data=EDSM_Strata,aes(label=SubRegion,color=Region))+
+  ylim(c(38,38.6))+xlim(c(-122.1,-121.3))
+
+
+
+
+
   ggtitle("Stations 323-519") + 
   geom_sf(data = stations.1, size = 4,  aes(col=StationNum,shape = Survey,fill=StationNum), alpha=.75)+
   coord_sf(xlim = c(-122.33, -121.93), ylim = c(38, 38.25), expand = FALSE)+
@@ -155,7 +159,7 @@ NASR.stations <- stations_compare_long%>%filter(is.na(SubRegion)==T)%>%
 
 
 ggplot()+geom_sf(data = marsh, size = .5, color = "black", fill = "aquamarine2") + 
-  geom_sf(data = EDSM_Strata, size = 1, color = "darkgreen",fill=NA) + 
+  geom_sf(data = EDSM_Strata, size = 1, color = "darkgreen",aes(fill=Region),alpha=.25) + 
   ggtitle("Stations 901-915") + 
   geom_sf(data = NASR.stations%>%filter(), size = 4,  aes(col=Survey,shape = Survey,fill=Survey), alpha=.75)+
   coord_sf(xlim = c(-122.5, -121.25), ylim = c(37.5, 38.6), expand = FALSE)+
@@ -183,4 +187,6 @@ Station_Dist <- function(WhichStation){
   
 }
 
-  Station_Dist("915")
+
+
+

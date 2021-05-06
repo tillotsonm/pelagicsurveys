@@ -15,7 +15,7 @@
 #Load libraries:
 require(tidyverse)
 require(lubridate)
-
+select <- dplyr::select
 
 #Set working directory
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
@@ -24,7 +24,7 @@ setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
 load("MASTER_Data/MASTER_Env_Hydro.rda")
 load("MASTER_Data/MASTER_All_Surveys.rda")
-
+table(is.na(All_Surveys_Master$Region),All_Surveys_Master$SurveySeason)
 #Add Season Variable===============================================
 
 Review_Enviro_Hydro <- Environment_Hydrology %>%
@@ -66,11 +66,6 @@ Review_Enviro_Hydro <- Environment_Hydrology %>%
   mutate(Salinity = if_else(Salinity <0,0,Salinity))%>%
   select(-c(Salinity_Pred,Conductivity))
 
-
-                             
-#Load strata volume table
-Strata_Volumes <- read_csv("SpatialData/Strata_Volumes.csv")%>%
-  mutate(SubRegion = as.factor(SubRegion))
 
 #Create target species list
 Target_Species <- data.frame(CommonName = c("American_Shad",
@@ -158,12 +153,7 @@ Working_Data <- All_Surveys_Master %>%ungroup()%>%
                                                       "Palaemon",
                                                       "Mud_Shrimp",
                                                       "Dungeness_Crab"),
-                                    "Other_Crustacean",OrganismCategory))%>%
-  
-  #Deal with NA regions/subregions
-  mutate(Region = if_else(SubRegion == "SF and Outer SP Bays","Far West",as.character(Region)))%>%
-  mutate(Region = as.factor(Region))
-
+                                    "Other_Crustacean",OrganismCategory))
 
 
 #Working Data contains all surveys including Non-CDFW and can be used as needed
@@ -173,9 +163,19 @@ Working_Data <- All_Surveys_Master %>%ungroup()%>%
 Working_Data_Review <- Working_Data %>%
   filter(Year>2001&Core_Survey==T)%>%
   mutate(CommonName = as.factor(if_else(CommonName %in% Target_Species$CommonName,CommonName,OrganismCategory)))%>%
-  dplyr::select(c(SurveySeason,Year,Month,SampleDate,StationCode,Temperature,Secchi,Turbidity,CableOut,Depth,TowDepth,Salinity,
-                  Station_Latitude,Station_Longitude,Tide,Weather,Waves,CommonName,Volume,
-                  ForkLength,Region,SubRegion,TowNumber,Age))%>%
+  dplyr::select(c(SurveySeason,Year,Month,SampleDate,
+                  StationCode,Temperature,
+                  Secchi,Turbidity,
+                  CableOut,Depth,
+                  TowDepth,Salinity,
+                  Station_Latitude,
+                  Station_Longitude,
+                  Tide,Weather,Waves,
+                  CommonName,Volume,
+                  ForkLength,Region,
+                  SubRegion,TowNumber,
+                  TowDirection,Microcystis,
+                  Age))%>%
   group_by(SurveySeason,SampleDate,StationCode,TowNumber,CommonName)%>%
   mutate(Catch = n())%>%
   mutate(CPUV = Catch/Volume)%>%
@@ -221,12 +221,22 @@ Working_Data_Review <- Working_Data %>%
                                     "SLS" = .1,
                                     "SKT" = 2)),.after=Volume)%>%
   filter(Volume > VolCut)%>%
-  select(-VolCut)
+  select(-VolCut)%>%
+  filter(Volume <12)%>%
+  
+  #Deal with NA regions/subregions
+  mutate(SubRegion = replace_na(as.character(SubRegion),"SF and Outer SP Bays"))%>%
+  mutate(SubRegion = as.factor(SubRegion))%>%
+  mutate(Region = if_else(SubRegion == "SF and Outer SP Bays","Far West",as.character(Region)))%>%
+  mutate(Region = as.factor(Region))
 
 
 
 
-Review_Data_Tows <- Working_Data_Review %>%select(-c(Age,ForkLength))%>%
+
+Review_Data_Tows <- Working_Data_Review %>%
+  filter(is.na(Station_Latitude)==F)%>%
+  select(-c(Age,ForkLength))%>%
   distinct(across(c(StationCode,SampleDate,TowNumber,CommonName,SurveySeason)),.keep_all = TRUE)%>%
   pivot_wider(values_from = c(CPUV,Mean_Length),names_from = CommonName)%>%
   mutate_at(vars(contains("CPUV")), ~replace_na(., 0))%>%
@@ -235,13 +245,67 @@ Review_Data_Tows <- Working_Data_Review %>%select(-c(Age,ForkLength))%>%
   #Drop presumed duplicated tows that have the same date, station and tow number, but differences in 
   #Environmental measurements. 
   
-  distinct(across(c("SampleDate","StationCode","SurveySeason","TowNumber")),.keep_all = T)
+  distinct(across(c("SampleDate","StationCode","SurveySeason","TowNumber")),.keep_all = T)%>%
+  
+  #Add intermediate level of geographic aggregation
+  mutate(Review_Region = as.character(Region),.after="Region")%>%
+  mutate(Review_Region = if_else(SubRegion %in% c("Suisun Marsh",
+                                                  "Upper Napa River",
+                                                  "Lower Napa River",
+                                                  "Cache Slough and Liberty Island"),
+                                 as.character(SubRegion),Review_Region))%>%
+  mutate(Review_Region = recode(Review_Region, 
+                                   "Upper Napa River" = "Napa River",
+                                   "Lower Napa River" = "Napa River",
+                                   "West" = "Confluence"))%>%
+  
+  #Arrange factors according to mean longitude
+  mutate(StationCode = factor(StationCode))%>%
+  group_by(Review_Region)%>%
+  mutate(Mean_Lat = mean(Station_Latitude),
+         Mean_Lon = mean(Station_Longitude))%>%
+  ungroup()%>%
+  arrange(Mean_Lon)%>%
+  mutate(Review_Region = factor(Review_Region,levels=unique(Review_Region)))%>%
+  group_by(StationCode)%>%
+  mutate(Mean_Lat = mean(Station_Latitude),
+         Mean_Lon = mean(Station_Longitude))%>%
+  ungroup()%>%
+  arrange(Mean_Lon)%>%
+  mutate(StationCode = factor(StationCode,levels=unique(StationCode)))%>%
+  group_by(SubRegion)%>%
+  mutate(Mean_Lat = mean(Station_Latitude),
+         Mean_Lon = mean(Station_Longitude))%>%
+  ungroup()%>%
+  arrange(Mean_Lon)%>%  
+  mutate(SubRegion = factor(SubRegion,levels=unique(SubRegion)))%>%
+  mutate(Year_Month = paste0(Year,"_",Month),.after=Month)%>%
+  select(-c(Mean_Lat,Mean_Lon))
+
+
+
 
 
 Review_Data_Long <- Working_Data_Review%>%filter(CommonName != "No_Catch")%>%
   mutate(CommonName = as.factor(CommonName))
 
 
+
+#Condense repeated tows to date/station level (mean CPUV, drop lengths)
+Review_Data_By_Station <- Review_Data_Tows%>%
+  filter(is.na(Region)==F)%>%
+  select(-contains("Length"))%>%
+  group_by(Region, Review_Region,SubRegion, SurveySeason,StationCode,SampleDate,Year,Month,Station_Longitude,Station_Latitude)%>%
+  summarise_at(vars(c(Salinity,
+                      Secchi,
+                      Turbidity,
+                      Temperature,
+                      Depth,
+                      TowDepth,
+                      contains("CPUV"),
+  )),mean,na.rm=T)%>%
+  ungroup()%>%
+  mutate_all(~replace(., is.nan(.), NA))
 
 
 #Create station-level summary
@@ -250,7 +314,7 @@ Mean <- function(x){return(mean(x,na.rm=T))}
 CV <- function(x){return(sd(x,na.rm=T)/mean(x,na.rm=T))}
 
 
-Review_Data_Stations <- Review_Data_Tows %>% 
+Review_Data_Locations <- Review_Data_Tows %>% 
   select(SurveySeason:CPUV_Prickly_Sculpin_Age_0)%>%
   select(-c(Tide,Weather,Waves,TowNumber))%>%
   group_by(StationCode)%>%
@@ -273,6 +337,7 @@ Review_Data_Stations <- Review_Data_Tows %>%
   #        .after = Surveys
   #        )
 
+save(Review_Data_Long,Review_Data_Tows,Review_Data_By_Station,Review_Data_Locations,Review_Enviro_Hydro,file="FINAL_REVIEW_DATA/CDFW_Pelagic_Review_Data.rda")
 
-save(Review_Data_Long,Review_Data_Tows,Review_Data_Stations,Review_Enviro_Hydro,file="FINAL_REVIEW_DATA/CDFW_Pelagic_Review_Data.rda")
+
 

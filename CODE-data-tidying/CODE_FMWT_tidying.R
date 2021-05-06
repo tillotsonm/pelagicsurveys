@@ -141,7 +141,10 @@ FMWT_Tidy <- FMWT_Tidy_All %>%
             RKI,`Channel/Shoal`:OrganismSymbol,NormalizedCode))%>%
   rename(Comment1 = StationComments,
          Comment2 = SpeciesComment)%>%
-  add_column(Comment3=NA)
+  add_column(Comment3=NA)%>%
+  
+  #Convert secchi depth to CM
+  mutate(Secchi = Secchi*100)
 
 save(FMWT_Tidy,file="TidyData/Individual Surveys/DATA_FMWT_Tidy.rda")
 

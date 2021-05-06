@@ -15,7 +15,7 @@
 require(ggforce)
 require(tidyverse)
 require(lubridate)
-
+select <- dplyr::select
 
 
 #Set working directory
@@ -75,12 +75,11 @@ Environment_Master <- read_csv("RawData/Environmental Data/Delta_integrated_WQ.c
 
 
 #Load regional and depth classifications
-region_classifiers <- read_csv("SpatialData/station_join_depth_strata_edsm.csv",
-                               col_types="ddfffff")%>%
-                      select(-c(Station_Longitude,Station_Latitude))%>%
-  dplyr::rename("Depth_Cat" = "category")%>%
-  mutate(SubRegion = replace_na(as.character(SubRegion),"SF and Outer SP Bays"))%>%
-  mutate(SubRegion = as.factor(SubRegion))
+region_classifiers <- read_csv("SpatialData/All_Survey_Locations_EDSM_Strata.csv",
+                               col_types="ffddfffll")%>%
+  filter(SurveySeason=="CDFW_5_Surveys")%>%
+                      select(-c(Station_Longitude,Station_Latitude,CatchData,EnvData,SurveySeason))%>%
+  dplyr::rename("strata_depth" = "category")
 
 
 
@@ -96,7 +95,7 @@ SLS_Env <- CDFW_Surveys_Long %>% filter(SurveySeason=="SLS")%>%
          "Temperature" = "TemperatureTop",
          "Time" = "TimeStart",
          "Depth" = "DepthBottom"
-  )%>%  left_join(region_classifiers,by="StationCode")%>%
+  )%>%  left_join(region_classifiers,by=c("StationCode"))%>%
 select(-c(Year:JulianDay,SurveyNumber,TowDirection,TowNumber,Turbidity,CableOut,TemperatureBottom,Weather,
           TimeStop:MeterDifference,TowDuration,strata_depth,WindDirection,ConductivityBottom,Waves))
 
@@ -107,6 +106,7 @@ Environment_Master <- Environment_Master %>% add_row(SLS_Env)%>%
                                data=Environment_Master),newdata=Environment_Master%>% add_row(SLS_Env)))%>%
   mutate(Salinity = if_else(is.na(Salinity)==T,Sal_Pred,Salinity))%>%
   dplyr::select(-Sal_Pred)
+
 
 
 
@@ -217,7 +217,7 @@ Working_Long <-  CDFW_Surveys_Long %>%
 
   #add regional separations
   
-  left_join(region_classifiers,by="StationCode")%>%
+  left_join(region_classifiers,by=c("StationCode"))%>%
   
   #Correct Pacific herring species name
  mutate(Species = recode(Species, "pallasi" = "pallasii"))%>% 
@@ -269,11 +269,11 @@ Working_Long <-  CDFW_Surveys_Long %>%
   #Calculate TowDepth
   mutate(TowDepth = CableOut * (3.93701/25)-BlockHeight)%>%
   
+  mutate(TowDepth = if_else(SurveySeason=="SKT",0,TowDepth))%>%
+  
   #Remove BlockHeight and CableOut
   select(-c(BlockHeight))
 
-
-table(CDFW_Surveys_Long$CommonName,CDFW_Surveys_Long$SurveySeason)
 #====================================================================================
 #==Create Wide Format data by tow with species counts and mean lengths
 
@@ -374,7 +374,7 @@ table(CDFW_Surveys_Long$CommonName,CDFW_Surveys_Long$SurveySeason)
 
 #==========Create integrated long data frame with ALL surveys (CDFW+Others)
 All_Surveys_Master <- Long_Master %>% 
-  rename("Depth_Stratum" = "Depth_Cat")%>%
+  rename("Depth_Stratum" = "strata_depth")%>%
   mutate(Area = NA,
          Core_Survey = TRUE,
          Gear = recode(SurveySeason,
@@ -408,6 +408,8 @@ All_Surveys_Master <- Long_Master %>%
          Weather,
          Waves,
          Tide,
+         Microcystis,
+         TowDirection,
          DepthBottom,
          CableOut,
          TowDepth)%>%
@@ -450,4 +452,8 @@ save(Long_Master,file ="MASTER_Data/MASTER_CDFWSurveys_Long_Format.rda")
 save(Environment_Hydrology,file ="MASTER_Data/MASTER_Env_Hydro.rda")
 
 save(All_Surveys_Master,file =  "MASTER_Data/MASTER_All_Surveys.rda")
+
+
+
+
 
