@@ -1,4 +1,4 @@
-library("ggplot2")
+
 theme_set(theme_bw())
 library("sf")
 library("tidyverse")
@@ -9,8 +9,6 @@ library("stringr")
 library("RColorBrewer")
 library("spatialEco")
 library("conflicted")
-conflict_prefer("select","dplyr")
-conflict_prefer("filter","dplyr")
 
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 

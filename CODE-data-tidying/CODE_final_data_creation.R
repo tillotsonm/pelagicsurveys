@@ -24,7 +24,8 @@ setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
 load("MASTER_Data/MASTER_Env_Hydro.rda")
 load("MASTER_Data/MASTER_All_Surveys.rda")
-table(is.na(All_Surveys_Master$Region),All_Surveys_Master$SurveySeason)
+
+
 #Add Season Variable===============================================
 
 Review_Enviro_Hydro <- Environment_Hydrology %>%
@@ -64,7 +65,26 @@ Review_Enviro_Hydro <- Environment_Hydrology %>%
                                data=Environment_Hydrology),newdata = .))%>%
   mutate(Salinity = if_else(is.na(Salinity)==T&is.na(Salinity_Pred)==F,Salinity_Pred,Salinity))%>%
   mutate(Salinity = if_else(Salinity <0,0,Salinity))%>%
-  select(-c(Salinity_Pred,Conductivity))
+  select(-c(Salinity_Pred,Conductivity))%>%
+  filter(is.na(Longitude)==F & Year >1974 & is.na(Region)==F)%>%
+  mutate(Review_Region = as.character(Region),.after="Region")%>%
+  mutate(Review_Region = if_else(SubRegion %in% c("Suisun Marsh",
+                                                  "Upper Napa River",
+                                                  "Lower Napa River",
+                                                  "Cache Slough and Liberty Island"),
+                                 as.character(SubRegion),Review_Region))%>%
+  mutate(Review_Region = recode(Review_Region, 
+                                "Upper Napa River" = "Napa River",
+                                "Lower Napa River" = "Napa River",
+                                "West" = "Confluence"))%>%
+  select(-c(JulianDay,SAC:SacTotal,SJWinter:SJTotal,Dec8Riv:May8Riv))%>%
+  mutate(Current_Historical = if_else(Year>2001,"Current","Historical"))%>%
+  group_by(Review_Region,Year,Month)%>%
+  mutate(Region_Tows_Month = n())%>%
+  ungroup()%>%
+  group_by(StationCode,Survey,Month,Year)%>%
+  mutate(Station_Tows_Month = n())
+
 
 
 #Create target species list
@@ -280,14 +300,30 @@ Review_Data_Tows <- Working_Data_Review %>%
   arrange(Mean_Lon)%>%  
   mutate(SubRegion = factor(SubRegion,levels=unique(SubRegion)))%>%
   mutate(Year_Month = paste0(Year,"_",Month),.after=Month)%>%
-  select(-c(Mean_Lat,Mean_Lon))
+  select(-c(Mean_Lat,Mean_Lon))%>%
+  
+  #add variable listing surveys
+  group_by(StationCode)%>%
+  mutate(Surveys = paste(unique(SurveySeason),collapse=","),.after = StationCode)%>%
+  ungroup()%>%
+  select(-c(CPUV_Tridentiger_Spp._Age_1,CPUV_Starry_Flounder_Age_1,CPUV_Chinook_Salmon_Age_1))
 
 
+#Check proportion of 0-catch tows for each species/age
+#Review_Data_Tows%>%select(contains("CPUV"))%>%apply(.,MARGIN=2,FUN=function(x){round(length(x[x==0])/length(x),3)})
 
 
+names(Review_Data_Tows)
 
 Review_Data_Long <- Working_Data_Review%>%filter(CommonName != "No_Catch")%>%
   mutate(CommonName = as.factor(CommonName))
+
+
+Review_Data_LF <- Working_Data_Review %>%
+  group_by(SurveySeason,StationCode,SampleDate,TowNumber,CommonName,ForkLength)%>%
+  mutate(Count = n(),.after=ForkLength)%>%
+  ungroup()%>%
+  distinct(across(c("SurveySeason","StationCode","SampleDate","TowNumber","CommonName","ForkLength")),.keep_all = T)
 
 
 
@@ -295,7 +331,8 @@ Review_Data_Long <- Working_Data_Review%>%filter(CommonName != "No_Catch")%>%
 Review_Data_By_Station <- Review_Data_Tows%>%
   filter(is.na(Region)==F)%>%
   select(-contains("Length"))%>%
-  group_by(Region, Review_Region,SubRegion, SurveySeason,StationCode,SampleDate,Year,Month,Station_Longitude,Station_Latitude)%>%
+  group_by(Region, Review_Region,SubRegion, Surveys, SurveySeason,StationCode,SampleDate,
+           Year,Month,Station_Longitude,Station_Latitude)%>%
   summarise_at(vars(c(Salinity,
                       Secchi,
                       Turbidity,
@@ -322,13 +359,13 @@ Review_Data_Locations <- Review_Data_Tows %>%
          N_Years = length(unique(Year)),
          Mean_TowsPerYear = round(N_Dates/N_Years,0))%>%
   mutate(Surveys = paste(unique(SurveySeason),collapse=","),.after = StationCode)%>%
-  group_by(StationCode,SurveySeason)%>%
+  group_by(StationCode)%>%
   mutate_at(c("Turbidity","Salinity","Temperature","Depth","TowDepth","Volume"),list(Mean=Mean,CV=CV))%>%
   mutate_at(vars(contains("CPUV")),mean)%>%
   select(-c(SurveySeason:SampleDate,Temperature:Salinity))%>%
   ungroup()%>%
-  distinct(across(c(StationCode,SurveySeason)),.keep_all = T)%>%
-  filter(N_Years>9)#%>%
+  distinct(across(c(StationCode)),.keep_all = T)#%>%
+  #filter(N_Years>9)#%>%
   # mutate(FMWT = if_else(grepl("FMWT",Surveys),TRUE,FALSE),
   #        STN = if_else(grepl("STN",Surveys),TRUE,FALSE),
   #        SLS = if_else(grepl("SLS",Surveys),TRUE,FALSE),
@@ -337,7 +374,14 @@ Review_Data_Locations <- Review_Data_Tows %>%
   #        .after = Surveys
   #        )
 
-save(Review_Data_Long,Review_Data_Tows,Review_Data_By_Station,Review_Data_Locations,Review_Enviro_Hydro,file="FINAL_REVIEW_DATA/CDFW_Pelagic_Review_Data.rda")
+save(Review_Data_Long,
+     Review_Data_LF,
+     Review_Data_Tows,
+     Review_Data_By_Station,
+     Review_Data_Locations,
+     Review_Enviro_Hydro,
+     file="FINAL_REVIEW_DATA/CDFW_Pelagic_Review_Data.rda")
 
 
+write_csv(Review_Data_Tows,"Pelagic_Review_Data.csv")
 

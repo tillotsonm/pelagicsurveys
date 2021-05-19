@@ -239,11 +239,11 @@ Working_Long <-  CDFW_Surveys_Long %>%
   #SLS = 0.37
   #20mm = 1.51
   #STN = 1.49
-  #FMWT= 10.7*0.8 assumes 80% door opening
+  #FMWT= 13.4*0.8 assumes 80% door opening
   #SKT = 13.95
   
   mutate(NetArea = as.double(recode(SurveySeason, "20mm" = 1.51,
-                                        "FMWT" =  8.56,
+                                        "FMWT" =  10.7,
                                         "SKT" = 13.95,
                                         "STN" = 1.49,
                                         "SLS" =0.37)))%>%
@@ -258,21 +258,32 @@ Working_Long <-  CDFW_Surveys_Long %>%
   
   #Create variable for BlockHeight by survey
   mutate(BlockHeight = as.numeric(recode(SurveySeason,
-                              "20mm" = 8.3,
-                              "FMWT" = 6.66,
-                              "STN" = 8.15,
-                              "SLS" = 6.66,
+                              "20mm" = 8.1,
+                              "FMWT" = 7.04,
+                              "STN" = 8.1,
+                              "SLS" = 8.1,
                               "SKT" = 0)))%>%
-  #Replace 0 CableOut values with NA
+  mutate(Angle = as.numeric(recode(SurveySeason,
+                                         "20mm" = 0.156434465,
+                                         "FMWT" = 0.139173101,
+                                         "STN" = 0.165047606,
+                                         "SLS" = 0.325568154,
+                                         "SKT" = 0)))%>%
+  mutate(Additional = as.numeric(recode(SurveySeason,
+                                   "20mm" = 4.14,
+                                   "FMWT" = 100,
+                                   "STN" = 4.17,
+                                   "SLS" = 2.67,
+                                   "SKT" = 0)))%>%
+  
   mutate(CableOut = na_if(CableOut,0))%>%
-  
   #Calculate TowDepth
-  mutate(TowDepth = CableOut * (3.93701/25)-BlockHeight)%>%
+  mutate(TowDepth = Angle*(CableOut+Additional)-BlockHeight)%>%
   
-  mutate(TowDepth = if_else(SurveySeason=="SKT",0,TowDepth))%>%
+  mutate(TowDepth = if_else(SurveySeason=="SKT",6,TowDepth))%>%
   
   #Remove BlockHeight and CableOut
-  select(-c(BlockHeight))
+  select(-c(BlockHeight,Angle,Additional))
 
 #====================================================================================
 #==Create Wide Format data by tow with species counts and mean lengths
@@ -444,8 +455,14 @@ All_Surveys_Master <- Long_Master %>%
   mutate(Volume = Volume/1000)
   
 
-
 Long_Master <- Long_Master %>% mutate(CommonName = as.factor(CommonName))
+
+All_Surveys_LF_Master <- All_Surveys_Master %>% group_by(SurveySeason,StationCode,SampleDate,TowNumber,CommonName,ForkLength)%>%
+  mutate(Count = n())%>%
+  ungroup()%>%
+  distinct(across(c("SurveySeason","StationCode","SampleDate","TowNumber","CommonName","ForkLength")),.keep_all = T)
+
+
 
 save(Long_Master,file ="MASTER_Data/MASTER_CDFWSurveys_Long_Format.rda")
 
@@ -453,7 +470,7 @@ save(Environment_Hydrology,file ="MASTER_Data/MASTER_Env_Hydro.rda")
 
 save(All_Surveys_Master,file =  "MASTER_Data/MASTER_All_Surveys.rda")
 
-
+save(All_Surveys_LF_Master,file =  "MASTER_Data/MASTER_All_Surveys_LF.rda")
 
 
 
