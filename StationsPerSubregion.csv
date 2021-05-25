@@ -1,0 +1,107 @@
+SurveySeason,Region,SubRegion,N_Stations
+FMWT,Far West,SF and Outer SP Bays,4
+FMWT,Far West,Mid San Pablo Bay,11
+20mm,Far West,Mid San Pablo Bay,2
+SLS,Far West,Upper Napa River,6
+20mm,Far West,Upper Napa River,4
+FMWT,Far West,East San Pablo Bay,6
+20mm,Far West,East San Pablo Bay,4
+STN,Far West,East San Pablo Bay,1
+SLS,Far West,Lower Napa River,3
+20mm,Far West,Lower Napa River,3
+STN,Far West,Lower Napa River,2
+FMWT,Far West,Lower Napa River,2
+SKT,Far West,Lower Napa River,1
+FMWT,Far West,Carquinez Strait,8
+STN,Far West,Carquinez Strait,1
+SKT,Far West,Carquinez Strait,1
+SLS,Far West,Carquinez Strait,1
+20mm,Far West,Carquinez Strait,1
+FMWT,Far West,West Suisun Bay,10
+STN,Far West,West Suisun Bay,2
+SKT,Far West,West Suisun Bay,2
+SLS,Far West,West Suisun Bay,2
+20mm,Far West,West Suisun Bay,2
+FMWT,West,Mid Suisun Bay,12
+STN,West,Mid Suisun Bay,3
+SKT,West,Mid Suisun Bay,3
+SLS,West,Mid Suisun Bay,3
+20mm,West,Mid Suisun Bay,3
+FMWT,West,Suisun Marsh,3
+STN,West,Suisun Marsh,3
+SKT,West,Suisun Marsh,3
+SLS,West,Suisun Marsh,3
+20mm,West,Suisun Marsh,3
+FMWT,West,Honker Bay,6
+STN,West,Honker Bay,2
+SKT,West,Honker Bay,2
+SLS,West,Honker Bay,2
+20mm,West,Honker Bay,2
+STN,West,Lower San Joaquin River,3
+SKT,West,Lower San Joaquin River,3
+SLS,West,Lower San Joaquin River,3
+20mm,West,Lower San Joaquin River,3
+FMWT,West,Lower San Joaquin River,5
+FMWT,West,Lower Sacramento River,8
+STN,West,Lower Sacramento River,3
+SKT,West,Lower Sacramento River,3
+SLS,West,Lower Sacramento River,4
+20mm,West,Lower Sacramento River,4
+FMWT,North,Sacramento River near Rio Vista,6
+SKT,North,Sacramento River near Rio Vista,3
+SLS,North,Sacramento River near Rio Vista,3
+20mm,North,Sacramento River near Rio Vista,3
+STN,North,Sacramento River near Rio Vista,2
+20mm,North,Cache Slough and Liberty Island,7
+FMWT,North,Cache Slough and Liberty Island,6
+STN,North,Cache Slough and Liberty Island,5
+SKT,North,Cache Slough and Liberty Island,4
+SLS,North,Cache Slough and Liberty Island,2
+FMWT,South,San Joaquin River at Twitchell Island,5
+STN,South,San Joaquin River at Twitchell Island,2
+SKT,South,San Joaquin River at Twitchell Island,2
+SLS,South,San Joaquin River at Twitchell Island,2
+20mm,South,San Joaquin River at Twitchell Island,2
+20mm,South,Franks Tract,1
+SLS,South,Franks Tract,1
+FMWT,North,Upper Sacramento River,3
+SKT,North,Upper Sacramento River,1
+FMWT,North,Sacramento River Ship Channel,4
+STN,North,Sacramento River Ship Channel,3
+20mm,North,Sacramento River Ship Channel,4
+FMWT,North,Sacramento River near Ryde,2
+SKT,North,Sacramento River near Ryde,1
+FMWT,South,Holland Cut,1
+STN,South,Holland Cut,1
+SKT,South,Holland Cut,1
+SLS,South,Holland Cut,1
+20mm,South,Holland Cut,1
+STN,South,Victoria Canal,1
+SLS,South,Victoria Canal,1
+20mm,South,Victoria Canal,1
+STN,South,Old River,1
+SKT,South,Old River,1
+SLS,South,Old River,1
+20mm,South,Old River,1
+FMWT,South,Old River,1
+FMWT,South,San Joaquin River at Prisoners Pt,6
+STN,South,San Joaquin River at Prisoners Pt,2
+SKT,South,San Joaquin River at Prisoners Pt,2
+SLS,South,San Joaquin River at Prisoners Pt,2
+20mm,South,San Joaquin River at Prisoners Pt,2
+FMWT,South,Middle River,1
+FMWT,South,Mildred Island,1
+STN,South,Mildred Island,1
+SKT,South,Mildred Island,1
+SLS,South,Mildred Island,1
+20mm,South,Mildred Island,1
+FMWT,South,North and South Forks Mokelumne River,6
+SKT,South,North and South Forks Mokelumne River,5
+STN,South,North and South Forks Mokelumne River,1
+SLS,South,North and South Forks Mokelumne River,1
+20mm,South,North and South Forks Mokelumne River,1
+FMWT,South,San Joaquin River near Stockton,4
+STN,South,San Joaquin River near Stockton,2
+SKT,South,San Joaquin River near Stockton,2
+SLS,South,San Joaquin River near Stockton,2
+20mm,South,San Joaquin River near Stockton,2

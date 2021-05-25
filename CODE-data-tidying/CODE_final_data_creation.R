@@ -25,6 +25,10 @@ setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 load("MASTER_Data/MASTER_Env_Hydro.rda")
 load("MASTER_Data/MASTER_All_Surveys.rda")
 
+#Read in cluster-based regions and strata
+
+Review_Strata <- read_csv("CODE-data-tidying/Review_Strata.csv",col_types = "fff")
+
 
 #Add Season Variable===============================================
 
@@ -67,24 +71,22 @@ Review_Enviro_Hydro <- Environment_Hydrology %>%
   mutate(Salinity = if_else(Salinity <0,0,Salinity))%>%
   select(-c(Salinity_Pred,Conductivity))%>%
   filter(is.na(Longitude)==F & Year >1974 & is.na(Region)==F)%>%
-  mutate(Review_Region = as.character(Region),.after="Region")%>%
-  mutate(Review_Region = if_else(SubRegion %in% c("Suisun Marsh",
-                                                  "Upper Napa River",
-                                                  "Lower Napa River",
-                                                  "Cache Slough and Liberty Island"),
-                                 as.character(SubRegion),Review_Region))%>%
-  mutate(Review_Region = recode(Review_Region, 
-                                "Upper Napa River" = "Napa River",
-                                "Lower Napa River" = "Napa River",
-                                "West" = "Confluence"))%>%
   select(-c(JulianDay,SAC:SacTotal,SJWinter:SJTotal,Dec8Riv:May8Riv))%>%
   mutate(Current_Historical = if_else(Year>2001,"Current","Historical"))%>%
+  
+  #Add review strata
+  left_join(Review_Strata,by="SubRegion")%>%
+
   group_by(Review_Region,Year,Month)%>%
   mutate(Region_Tows_Month = n())%>%
   ungroup()%>%
   group_by(StationCode,Survey,Month,Year)%>%
-  mutate(Station_Tows_Month = n())
-
+  mutate(Station_Tows_Month = n())%>%
+  ungroup()%>%
+  group_by(Review_Stratum,Survey,Month,Year)%>%
+  mutate(Strata_Tows_Month = n())%>%
+  ungroup()%>%
+  relocate(c(Review_Region,Review_Stratum),.after=SubRegion)
 
 
 #Create target species list
@@ -173,7 +175,11 @@ Working_Data <- All_Surveys_Master %>%ungroup()%>%
                                                       "Palaemon",
                                                       "Mud_Shrimp",
                                                       "Dungeness_Crab"),
-                                    "Other_Crustacean",OrganismCategory))
+                                    "Other_Crustacean",OrganismCategory))%>%
+  
+  #Add review strata
+  left_join(Review_Strata,by="SubRegion")%>%
+  relocate(c(Review_Region,Review_Stratum),.after=SubRegion)
 
 
 #Working Data contains all surveys including Non-CDFW and can be used as needed
@@ -195,7 +201,9 @@ Working_Data_Review <- Working_Data %>%
                   ForkLength,Region,
                   SubRegion,TowNumber,
                   TowDirection,Microcystis,
-                  Age))%>%
+                  Age,
+                  Review_Region,
+                  Review_Stratum))%>%
   group_by(SurveySeason,SampleDate,StationCode,TowNumber,CommonName)%>%
   mutate(Catch = n())%>%
   mutate(CPUV = Catch/Volume)%>%
@@ -248,8 +256,11 @@ Working_Data_Review <- Working_Data %>%
   mutate(SubRegion = replace_na(as.character(SubRegion),"SF and Outer SP Bays"))%>%
   mutate(SubRegion = as.factor(SubRegion))%>%
   mutate(Region = if_else(SubRegion == "SF and Outer SP Bays","Far West",as.character(Region)))%>%
-  mutate(Region = as.factor(Region))
-
+  mutate(Region = as.factor(Region))%>%
+  mutate(Review_Region = replace_na(as.character(Review_Region),"Far West"))%>%
+  mutate(Review_Region = as.factor(Review_Region))%>%
+  mutate(Review_Stratum = replace_na(as.character(Review_Stratum),"San Pablo Bay and Carquinez Strait"))%>%
+  mutate(Review_Stratum = as.factor(Review_Stratum))
 
 
 
@@ -267,17 +278,8 @@ Review_Data_Tows <- Working_Data_Review %>%
   
   distinct(across(c("SampleDate","StationCode","SurveySeason","TowNumber")),.keep_all = T)%>%
   
-  #Add intermediate level of geographic aggregation
-  mutate(Review_Region = as.character(Region),.after="Region")%>%
-  mutate(Review_Region = if_else(SubRegion %in% c("Suisun Marsh",
-                                                  "Upper Napa River",
-                                                  "Lower Napa River",
-                                                  "Cache Slough and Liberty Island"),
-                                 as.character(SubRegion),Review_Region))%>%
-  mutate(Review_Region = recode(Review_Region, 
-                                   "Upper Napa River" = "Napa River",
-                                   "Lower Napa River" = "Napa River",
-                                   "West" = "Confluence"))%>%
+  #Add review strata
+
   
   #Arrange factors according to mean longitude
   mutate(StationCode = factor(StationCode))%>%
@@ -313,8 +315,6 @@ Review_Data_Tows <- Working_Data_Review %>%
 #Review_Data_Tows%>%select(contains("CPUV"))%>%apply(.,MARGIN=2,FUN=function(x){round(length(x[x==0])/length(x),3)})
 
 
-names(Review_Data_Tows)
-
 Review_Data_Long <- Working_Data_Review%>%filter(CommonName != "No_Catch")%>%
   mutate(CommonName = as.factor(CommonName))
 
@@ -331,7 +331,7 @@ Review_Data_LF <- Working_Data_Review %>%
 Review_Data_By_Station <- Review_Data_Tows%>%
   filter(is.na(Region)==F)%>%
   select(-contains("Length"))%>%
-  group_by(Region, Review_Region,SubRegion, Surveys, SurveySeason,StationCode,SampleDate,
+  group_by(Region, Review_Region,Review_Stratum,SubRegion, Surveys, SurveySeason,StationCode,SampleDate,
            Year,Month,Station_Longitude,Station_Latitude)%>%
   summarise_at(vars(c(Salinity,
                       Secchi,
@@ -384,4 +384,19 @@ save(Review_Data_Long,
 
 
 write_csv(Review_Data_Tows,"Pelagic_Review_Data.csv")
+
+
+# Review_Data_Tows%>%group_by(Region,SurveySeason,SubRegion)%>%
+#   mutate(N_Stations = length(unique(StationCode)))%>%
+#   select(SurveySeason,Region,SubRegion,N_Stations)%>%
+#   distinct()%>%
+#   write_csv("StationsPerSubregion.csv")
+
+
+
+Review_Data_By_Station%>%group_by(Review_Region,Review_Stratum)%>%
+  summarise_at(vars(contains("CPUV")), ~sum(.!= 0)/n())
+
+
+
 
