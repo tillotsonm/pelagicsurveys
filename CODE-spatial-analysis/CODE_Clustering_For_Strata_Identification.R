@@ -26,10 +26,12 @@ setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 load("FINAL_REVIEW_DATA/CDFW_Pelagic_Review_Data.rda")
 
 #===============Spatial Layers================================
+Review_Enviro_Hydro <- ungroup(Review_Enviro_Hydro)
 
 region_lookup <- Review_Data_By_Station %>% 
   select(Review_Region,Region,SubRegion,Review_Stratum)%>%
-  distinct()
+  distinct()%>%
+  mutate(Review_Stratum = recode(Review_Stratum,"Napa River*" = "Napa River"))
 
 #Read in cluster-based regions and strata
 
@@ -146,6 +148,8 @@ Cluster_Catch <- function(Survey = "FMWT", plot_tree =T , level = "Station", N_C
     CM_Stand <- Community_Matrix%>%
       vegan::decostand("standardize")
     
+    Euclidean <- vegdist(CM_Stand,method="euclidean")
+    
     Clustered <- hclust(dist(CM_Stand),method=clust_method)
     
     if(plot_tree==T){print(plot(Clustered))}
@@ -172,7 +176,10 @@ Cluster_Catch <- function(Survey = "FMWT", plot_tree =T , level = "Station", N_C
             geom_sf(data=EDSM_Strata,size = 1, color = "black",fill=NA)+
             coord_sf(ylim = c(37.75, 38.65), expand = FALSE)+
             ggtitle(paste(Survey,"Subregion-Based Clustering")))
-    return(list(Clustered,map_dat_plot))
+    
+    print(round(cor(Euclidean,cophenetic(Clustered)),2))
+    
+    return(list(Clustered,map_dat_plot,Euclidean))
   }
   
 }
@@ -180,6 +187,9 @@ Cluster_Catch <- function(Survey = "FMWT", plot_tree =T , level = "Station", N_C
 
 
 SLS_clusta <- Cluster_Catch(level="SubRegion",Survey = "SLS",N_Clusters = 9,clust_method="ward.D2",plot_tree = F)
+
+
+
 SKT_clusta <- Cluster_Catch(level="SubRegion",Survey = "SKT",N_Clusters = 9,clust_method="ward.D2",plot_tree = F)
 TMM_clusta <- Cluster_Catch(level="SubRegion",Survey = "20mm",N_Clusters = 9,clust_method="ward.D2",plot_tree = F)
 STN_clusta <- Cluster_Catch(level="SubRegion",Survey = "STN",N_Clusters = 9,clust_method="ward.D2",plot_tree = F)
@@ -212,11 +222,11 @@ Cluster_Env <- function(Survey = "FMWT",Months = 9:12, plot_tree =T ,
                         SubRegions = NA,trim_regions=F){
   
   Env_Points <-Review_Enviro_Hydro%>%
+    filter(Year>2001&Month %in% Months)%>%
     select(Survey,Review_Region,SubRegion,StationCode,Longitude,Latitude)%>%
     distinct(across(c("Survey","StationCode")),.keep_all=T)%>%
     st_as_sf( coords = c("Longitude", "Latitude"), 
-              crs = 4326, agr = "constant")%>%
-    filter(Year>2001&Month %in% Months)
+              crs = 4326, agr = "constant")
   
   Env_Dat_a <- Review_Enviro_Hydro %>%
     ungroup()%>%
@@ -229,11 +239,11 @@ Cluster_Env <- function(Survey = "FMWT",Months = 9:12, plot_tree =T ,
     
     
     Env_Points <-Review_Enviro_Hydro%>%
-      select(Survey,Review_Region,SubRegion,StationCode,Longitude,Latitude)%>%
+      filter(Year>2001&Month %in% Months & SubRegion %in% SubRegions)%>%
+      select(Survey,Review_Region,SubRegion,StationCode,Longitude,Latitude,)%>%
       distinct(across(c("Survey","StationCode")),.keep_all=T)%>%
       st_as_sf( coords = c("Longitude", "Latitude"), 
-                crs = 4326, agr = "constant")%>%
-      filter(Year>2001&Month %in% Months & SubRegion %in% SubRegions)
+                crs = 4326, agr = "constant")
     
     
     }
@@ -282,10 +292,10 @@ Cluster_Env <- function(Survey = "FMWT",Months = 9:12, plot_tree =T ,
     select(-c(Chlorophyll_Annual_Mean,Chlorophyll_WithinYear_CV,Chlorophyll_BetweenYear_CV))
   
   
-  CM_Stand <- Community_Matrix%>%
-    .^(1/3) %>%
+  CM_Stand <- Community_Matrix %>%
     vegan::decostand("standardize")
   
+  Euclidean <- vegdist(CM_Stand,method="euclidean")
   
   clust1 <- hclust(dist(CM_Stand),method=clust_method)
   
@@ -303,6 +313,8 @@ Cluster_Env <- function(Survey = "FMWT",Months = 9:12, plot_tree =T ,
           geom_sf(data=Env_Points,color="black")+
           coord_sf(ylim = c(37.75, 38.65), expand = FALSE)+
           ggtitle(paste(Survey,"Environmental Clustering")))
+  
+  print(round(cor(Euclidean,cophenetic(clust1)),2))
   
   return(list(clust1,Env_Clust))
 }
@@ -338,7 +350,7 @@ STN_All_Strata <- Review_Data_By_Station%>%
   select(-c(Cluster.y,Cluster.x))%>%
   left_join(STN_clusta_env[[2]],by="SubRegion")%>%
   relocate(Cluster,.after=Catch_Subregion_Cluster)%>%
-  relocate(Region,.before=Review_Region)%>%
+  relocate(Review_Region,.before=Review_Region)%>%
   relocate(geometry,.after = last_col())%>%
   rename("Env_Cluster" = "Cluster")
 
@@ -401,3 +413,10 @@ ggplot()+geom_sf(data = marsh, size = .5, color = "black", fill = NA)+
 
 
 
+ggplot()+geom_sf(data = marsh, size = .5, color = "black", fill = NA)+
+  geom_sf(data=EDSM_Strata,size = 1, color = "darkgreen",aes(fill=Review_Stratum),alpha=.75)+
+  ggtitle("Final Review Strata")
+
+ggplot()+geom_sf(data = marsh, size = .5, color = "black", fill = NA)+
+  geom_sf(data=EDSM_Strata,size = 1, color = "darkgreen",aes(fill=Review_Region),alpha=.75)+
+  ggtitle("Final Review Regions")

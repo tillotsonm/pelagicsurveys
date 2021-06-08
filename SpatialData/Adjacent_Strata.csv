@@ -1,0 +1,23 @@
+Group_Level,Region,Adjacent_Grouping
+Region,Far West,Group1
+Region,Suisun Bay and Marsh,Group1
+Region,Suisun Bay and Marsh,Group2
+Region,Confluence,Group2
+Region,Confluence,Group3
+Region,North,Group3
+Region,South,Group3
+Stratum,San Pablo Bay and Carquinez Strait,Group1
+Stratum,Napa River*,Group1
+Stratum,Suisun and Honker Bays,Group2
+Stratum,San Pablo Bay and Carquinez Strait,Group2
+Stratum,Suisun and Honker Bays,Group3
+Stratum,Suisun Marsh,Group3
+Stratum,Confluence,Group3
+Stratum,Confluence,Group4
+Stratum,North and South Forks Mokelumne River,Group4
+Stratum,South,Group4
+Stratum,Sacramento Mainstem,Group4
+Stratum,Cache Slough,Group4
+Stratum,Cache Slough,Group5
+Stratum,Sacramento Ship Channel,Group5
+Stratum,Sacramento Mainstem,Group5

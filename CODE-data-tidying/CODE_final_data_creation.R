@@ -354,7 +354,7 @@ CV <- function(x){return(sd(x,na.rm=T)/mean(x,na.rm=T))}
 Review_Data_Locations <- Review_Data_Tows %>% 
   select(SurveySeason:CPUV_Prickly_Sculpin_Age_0)%>%
   select(-c(Tide,Weather,Waves,TowNumber))%>%
-  group_by(StationCode)%>%
+  group_by(StationCode,SurveySeason)%>%
   mutate(N_Dates = length(unique(SampleDate)),
          N_Years = length(unique(Year)),
          Mean_TowsPerYear = round(N_Dates/N_Years,0))%>%
@@ -394,8 +394,10 @@ write_csv(Review_Data_Tows,"Pelagic_Review_Data.csv")
 
 
 
-Review_Data_By_Station%>%group_by(Review_Region,Review_Stratum)%>%
-  summarise_at(vars(contains("CPUV")), ~sum(.!= 0)/n())
+Prop_Detect <- Review_Data_By_Station%>%
+  group_by(Review_Region,Review_Stratum,SurveySeason)%>%
+  summarise_at(vars(contains("CPUV")), ~round(sum(.!= 0)/n(),2))
+
 
 
 

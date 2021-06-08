@@ -20,9 +20,7 @@ load("FINAL_REVIEW_DATA/CDFW_Pelagic_Review_Data.rda")
 #====================================================================================================
 #Effort plot of stations ranked by # of SurveySeasons 
 
-Review_Data_Locations%>%
-  select()
-  
+
 
 
 #====================================================================================================
@@ -454,4 +452,77 @@ SampVol_Summary <- Annual_SampVol_Station%>%
   ungroup()
 
 write_csv(SampVol_Summary,"Volume Sampled Summary.csv")
+
+
+
+#
+Mean <- function(x){mean(x,na.rm=T)}
+
+Station_Summary <- Review_Data_Tows %>% 
+  select(SurveySeason:CPUV_Prickly_Sculpin_Age_0)%>%
+  select(-c(Tide,Weather,Waves,TowNumber))%>%
+  group_by(StationCode)%>%
+  mutate(N_Dates = length(unique(SampleDate)),
+         N_Years = length(unique(Year)),
+         Mean_TowsPerYear = round(N_Dates/N_Years,0))%>%
+  mutate(Surveys = paste(unique(SurveySeason),collapse=","),.after = StationCode)%>%
+  group_by(StationCode,SurveySeason)%>%
+  mutate_at(c("Turbidity","Salinity","Temperature","Depth","TowDepth","Volume"),list(Mean=Mean))%>%
+  mutate_at(vars(contains("CPUV")),mean)%>%
+  select(-c(SurveySeason:SampleDate,Temperature:Salinity))%>%
+  ungroup()%>%
+  distinct(across(c(StationCode)),.keep_all = T)%>%
+  filter(N_Years>9)%>%
+  mutate(FMWT = if_else(grepl("FMWT",Surveys),1,0),
+       STN = if_else(grepl("STN",Surveys),1,0),
+       SLS = if_else(grepl("SLS",Surveys),1,0),
+       SKT = if_else(grepl("SKT",Surveys),1,0),
+       TMM = if_else(grepl("20mm",Surveys),1,0),
+       .after = Surveys
+       )%>%
+  select(-SurveySeason)%>%
+  mutate(N_Seasons = STN+SLS+SKT+TMM+FMWT,.after=TMM)%>%
+  mutate(STN= recode(STN, `1` = "Sampled", `0` = "Not Sampled"))%>%
+  mutate(FMWT= recode(FMWT, `1` = "Sampled", `0` = "Not Sampled"))%>%
+  mutate(SKT= recode(SKT, `1` = "Sampled", `0` = "Not Sampled"))%>%
+  mutate(TMM= recode(TMM, `1` = "Sampled", `0` = "Not Sampled"))%>%
+  mutate(SLS= recode(SLS, `1` = "Sampled", `0` = "Not Sampled"))%>%
+  pivot_longer(FMWT:TMM,names_to="SurveySeason",values_to="Is_Surveyed")%>%
+  relocate(SurveySeason:Is_Surveyed,.after=N_Seasons)%>%
+  arrange(N_Seasons)%>%
+  mutate(StationCode = factor(StationCode,levels=unique(StationCode)))%>%
+  mutate(Review_Stratum = factor(Review_Stratum, levels=c("San Pablo Bay and Carquinez Strait",
+                                                          "Napa River*",
+                                                          "Suisun and Honker Bays",
+                                                          "Suisun Marsh",
+                                                          "Confluence",
+                                                          "Cache Slough",
+                                                          "North and South Forks Mokelumne River",
+                                                          "South",
+                                                          "Sacramento Mainstem",
+                                                          "Sacramento Ship Channel")
+                                 ))
+
+
+
+pdf("TemporaryOutputs/Seasonal effort by strata grid.pdf",height = 11, width = 20) 
+Station_Summary %>% 
+  mutate(SurveySeason = factor(SurveySeason,levels=c("STN","TMM","SLS","SKT","FMWT")))%>%
+  ggplot(aes(y=SurveySeason,x=StationCode,fill=Is_Surveyed,color="green"))+
+  scale_fill_manual(values = c("white","black")) +
+  geom_tile(alpha=.5,color="black")+
+  labs(fill = "")+
+  facet_grid(cols=vars(Review_Stratum),space = "free_x",scales = "free_x",
+            labeller = label_wrap_gen(width = 2, multi_line = TRUE))+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+dev.off()
+
+pdf("TemporaryOutputs/Seasonal effort by strata points.pdf",height = 11, width = 8)
+Station_Summary%>% distinct(across("StationCode"),.keep_all=T)%>%
+  add_column(Plot_Sep = c(rep("b",77),rep("a",77)))%>%
+  ggplot(aes(y=StationCode,x=N_Seasons,color=Review_Stratum))+
+  geom_point()+theme_bw()+facet_wrap(~Plot_Sep,scales = "free_y")
+dev.off()
+
+
 

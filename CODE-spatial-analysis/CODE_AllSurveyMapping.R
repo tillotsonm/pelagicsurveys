@@ -8,11 +8,15 @@ library("rnaturalearthhires")
 library("stringr")
 library("RColorBrewer")
 library("spatialEco")
-library("conflicted")
+library(geosphere)
+
+
+
 
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
 load("MASTER_Data/MASTER_Long_Format.rda")
+
 
 
 #===============Delta Base Layer================================
@@ -21,6 +25,10 @@ marsh <- st_read(
 
 EDSM_Strata <- st_read(
   "CODE-spatial-analysis/DSm_Subregions_UTM10NAD83/DSm_Subregions_UTM10NAD83.shp")
+
+
+
+
 
 
 
@@ -81,6 +89,15 @@ ggplot()+geom_sf(data = marsh, size = .5, color = "black", fill = "aquamarine2")
   coord_sf(xlim = c(-122.5, -121.25), ylim = c(37.5, 38.6), expand = FALSE)+
   scale_shape_manual(values=c(21,22,23,24,25))+
   ggspatial::annotation_scale(location = 'bl')
+
+
+
+ggplot()+geom_sf(data = marsh, size = .5, color = "black", fill = "aquamarine2") + 
+  geom_sf(data = EDSM_Strata, size = 1, color = "darkgreen",fill=NA)+
+  geom_sf(data=StartEnd,aes(col=Type))+
+  coord_sf(xlim = c(-122.5, -122.25), ylim = c(37.9, 38.1), expand = FALSE)
+
+
 
 
 

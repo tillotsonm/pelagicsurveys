@@ -379,6 +379,24 @@ Working_Long <-  CDFW_Surveys_Long %>%
   #   relocate(WaterYear:May8Riv,.after=JulianDay)
   # 
 
+Tow_Position_Data <- Working_Long %>% filter(Year>2001, is.na(Start_Latitude)==F)%>%
+  select(SampleDate,Year,Month,TowNumber,Region,SubRegion,SurveySeason,StationCode,
+         Start_Longitude:End_Latitude,Station_Longitude,Station_Latitude,Volume)%>%
+  mutate(Start_Latitude = abs(Start_Latitude),
+         End_Latitude = abs(End_Latitude))%>%
+  distinct()%>%
+  filter((Start_Longitude != 0 & 
+           Start_Latitude != 0 & 
+           End_Longitude!=0 & 
+           End_Latitude>30) %>% replace_na(TRUE))%>%
+  pivot_longer(cols=Start_Longitude:Station_Latitude,names_to=c("Type","Axis"),values_to="Coordinate",names_sep="_")%>%
+  pivot_wider(names_from=Axis,values_from=Coordinate)%>%
+  filter(Longitude> -122.55 & Latitude > 37.5)
+
+
+
+
+write_csv(Tow_Position_Data,"SpatialData/TowStartEndPositions.csv")
 
 #====================================================================================
 #================================Add non-CDFW surveys================================
