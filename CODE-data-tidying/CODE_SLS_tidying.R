@@ -35,6 +35,7 @@ Water <-read_csv("RawData/SLS/Water Info.csv",
                  col_types = "dDfdddddccc")%>%
   rename(SampleDate = Date, StationCode = Station, SurveyNumber = Survey, Comment2 = Comments)
 
+
 Catch <- read_csv("RawData/SLS/Catch.csv",
                   col_types = "Dfdfdddd")%>%
   select(-c(6:7))%>%

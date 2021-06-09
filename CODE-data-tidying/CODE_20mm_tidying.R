@@ -6,6 +6,7 @@
 #==============================================================================
 require(tidyverse)
 require(lubridate)
+select <- dplyr::select
 
 
 #Set working directory, adjust as needed
@@ -37,7 +38,7 @@ luTide <- read_csv("RawData/SLS/luTide.csv",col_types = "ff")
 
 #Load and join fish FishSample, FishLength and FishCode data
 FishSample <- read_csv("RawData/20mm/FishSample.csv")%>%
-  full_join(read_csv("RawData/20mm/FishLength.csv",col_types="dddlldd"),by="FishSampleID")%>%
+  right_join(read_csv("RawData/20mm/FishLength.csv",col_types="dddlldd"),by="FishSampleID")%>%
   left_join(read_csv("RawData/20mm/FishCodes.csv"),by="FishCode")%>%
   rename(CommonName = `Common Name`)%>%
   mutate(Dead = !ReleasedAlive)%>%
@@ -45,11 +46,13 @@ FishSample <- read_csv("RawData/20mm/FishSample.csv")%>%
             `TNS Field`,Symbol,`MWT Field`,FishLengthID,
             ReleasedAlive))
 
+
 #Join all sheets based on database structure
 Tidy_20mm_all <- Survey %>% 
   full_join(Station, by ="SurveyID")%>%
   full_join(Tow,by="StationID")%>%
   full_join(Gear,"TowID")%>%
+  filter(Gear=="Net")%>%
   rename("TideRowID"="Tide")%>%#========Rename Tide Stage======
  left_join(luTide,by="TideRowID")%>%#=Replace tide code with factor text
   select(-TideRowID)%>%
@@ -66,21 +69,22 @@ Tidy_20mm_all <- Survey %>%
          JulianDay = yday(SampleDate),
          Survey_Station = paste(SurveySeason,StationCode,sep="_"),
          .after="SampleDate")%>%
-  select(-c(SurveyID))%>%filter(Gear=="Net")%>%
+  select(-c(SurveyID,TowID,SampleCode,FishCode))%>%
+  
   #Create CommonName for No Catch Tows and correct Catch, LengthFrequency columns
   mutate(CommonName = if_else(is.na(Catch)==T,"No Catch",as.character(CommonName)),
          Catch = if_else(is.na(Catch)==T,1,Catch),
          CommonName = as.factor(CommonName))%>%
-#Remove duplicate length rows for species-date-catch-Tow combinations
-distinct(across(c(SampleDate, StationCode, CommonName, ForkLength,TowNumber)),.keep_all = T)%>%
+  
+  distinct(across(c("SampleDate","StationCode","ForkLength","TowNumber")),.keep_all=T)%>%
+  
   #==================Deal with unmeasured fish==============================
-group_by(SampleDate, StationCode, CommonName)%>%
+group_by(SampleDate, StationCode, CommonName,TowNumber)%>%
   add_tally(name="TotalMeasured")%>%
-  group_by(SampleDate, StationCode, CommonName, ForkLength)%>%
+  group_by(SampleDate, StationCode, CommonName, ForkLength,TowNumber)%>%
   add_tally(name="LengthFrequency")%>%
   mutate(LengthFrequency_Adjusted = round(Catch*(LengthFrequency/TotalMeasured),0))%>%
   uncount(LengthFrequency_Adjusted)%>%select(-c(LengthFrequency,TotalMeasured))
-
 
   
 
@@ -96,5 +100,10 @@ Tidy_20mm <- Tidy_20mm_all %>%
 save(Tidy_20mm,file="TidyData/Individual Surveys/DATA_20mm_Tidy.rda")
 
 
+
+Tidy_20mm_all %>% ungroup() %>% distinct(across(c("SampleDate","StationCode","CommonName")),.keep_all=T)%>%summarize(sum(Catch,na.rm=T))
+
+
+FishSamp <- read_csv("RawData/20mm/FishSample.csv")%>%left_join(read_csv("RawData/20mm/FishCodes.csv"),by="FishCode")
 
 

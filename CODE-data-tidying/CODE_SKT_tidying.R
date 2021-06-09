@@ -4,6 +4,7 @@
 #Prepared by Michael Tillotson, ICF
 #Created March 9, 2021
 #==============================================================================
+select <- dplyr::select
 
 #Set working directory, adjust as needed
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
@@ -12,6 +13,8 @@ setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 Sample <- read_csv("RawData/SKT/tblSample.csv",
                    col_types=c("dDdfdddddddddffdccc"))%>%
   rename(MeterSerial = MeterNumber)
+
+
 
 Catch <- read_csv("RawData/SKT/tblCatch.csv",
                   col_types = "ddfdc")%>%
@@ -36,6 +39,8 @@ luTide <- read_csv("RawData/SKT/luTide.csv",col_types = "ff")
 
 luSex <- read_csv("RawData/SKT/tblSexLookUp.csv",col_types = "ff")
 
+Catch%>%filter(OrganismCode==19)%>%summarise(sum(Catch))
+
 
 SKT_Tidy_All <- Sample %>% 
   rename("TowDirectionID"="TowDirectionCode")%>%  #========Rename TowDirection======
@@ -54,6 +59,7 @@ SKT_Tidy_All <- Sample %>%
   rename(CODE = Sex)%>%
   left_join(luSex,by="CODE")%>%
   rename(Sex = Description)%>%
+  select(-c("ReproductiveStage","2nd Stage",LengthRowID,CatchRowID,FishID1,FishID2,SampleRowID))%>%
   rename(Station_Origin = `Station Origin`,
          StationCode = Station,
          TemperatureTop = WaterTemperature,
@@ -84,26 +90,23 @@ SKT_Tidy_All <- Sample %>%
          Comment2 = CatchComments,
          Comment3 = Comments)%>%
   #Remove duplicate length rows for species-date-catch combinations
-  distinct(across(c(SampleDate, StationCode, CommonName, ForkLength,Sex)),.keep_all = T)%>%
+  distinct(across(c(SampleDate, StationCode, CommonName, ForkLength)),.keep_all = T)%>%
   #==================Deal with unmeasured fish==============================
-  group_by(SampleDate, StationCode, CommonName, Sex)%>%
+  group_by(SampleDate, StationCode, CommonName)%>%
   add_tally(name="TotalMeasured")%>%
-  group_by(SampleDate, StationCode, CommonName, ForkLength,Sex)%>%
+  group_by(SampleDate, StationCode, CommonName, ForkLength)%>%
   add_tally(name="LengthFrequency")%>%
   mutate(LengthFrequency_Adjusted = round(Catch*(LengthFrequency/TotalMeasured),0))%>%
   uncount(LengthFrequency_Adjusted)%>%select(-c(LengthFrequency,TotalMeasured))
 
-table(SKT_Tidy_All$CommonName=="No Catch")
 
 
 
 
-SKT_Tidy <- SKT_Tidy_All %>%   select(-c(`2nd Stage`,CODE,LengthRowID,CatchRowID,SampleRowID,LengthRowID,
-                                         `Sort Order`,FishID1,FishID2,AlternateName,Depth,
+SKT_Tidy <- SKT_Tidy_All %>%   select(-c(CODE,
+                                         `Sort Order`,AlternateName,Depth,
                                          OrganismCode,NameInSAS,Volume,Start_Longitude,Start_Latitude))
 
 save(SKT_Tidy,file="TidyData/Individual Surveys/DATA_SKT_Tidy.rda")
   
 
-
-                                   

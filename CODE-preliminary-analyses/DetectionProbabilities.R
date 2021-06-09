@@ -8,6 +8,8 @@ library("rnaturalearthhires")
 library("stringr")
 library("RColorBrewer")
 library("spatialEco")
+library("wesanderson")
+library("multcomp")
 library(geosphere)
 select <- dplyr::select
 filter <- dplyr::filter
@@ -139,9 +141,9 @@ DetectionData <- Review_Data_Tows %>%
                                           "Suisun and Honker Bays",
                                           "Suisun Marsh",
                                           "Confluence",
-                                          "Cache Slough",
                                           "South",
                                           "North and South Forks Mokelumne River",
+                                          "Cache Slough",
                                           "Sacramento Mainstem",
                                           "Sacramento Ship Channel")))
 
@@ -183,34 +185,98 @@ plot_detections("Pacific_Herring_Age_0")
 plot_detections("Delta_Smelt_Age_0")
 
 
-table(Review_Data_Long$CommonName,Review_Data_Long$SurveySeason)
-
-
-
-table(Review_Data_Tows$CPUV_American_Shad_Age_0,Review_Data_Tows)
-
-
-
 
 #==========================Species ANOVAS====================================
 
-AS0_anova <- Review_Data_Tows%>%filter(SurveySeason=="FMWT")%>%with(.,aov(CPUV_American_Shad_Age_0~Review_Stratum))
-
-TukeyHSD(AS0_anova)%>%plot()
-
-
-Binary_Data <- Review_Data_Tows%>%mutate_at(vars(contains("CPUV")),~if_else(.==0,0,1))
+Binary_Data <- Review_Data_Tows%>%mutate_at(vars(contains("CPUV")),~if_else(.==0,0,1))%>%ungroup()%>%
+  select(-(contains("Length")|contains("Other")))
+names(Binary_Data)
 
 
 
-AS0_glm <- Binary_Data %>% filter(SurveySeason=="FMWT") %>% 
-  glm(data=.,CPUV_Northern_Anchovy_Age_0~Review_Stratum,family="binomial")
+a_glm <-  glm(data=Binary_Data,CPUV_Delta_Smelt_Age_0~Review_Stratum+as.factor(Year),family="binomial")
+
+summary(a_glm)
+
+summary(glht(a_glm, mcp(Review_Stratum="Tukey")))
 
 
-effect("Review_Stratum",AS0_glm)%>%data.frame()%>%mutate_if(is.numeric,round,2)
+Plot_Comparisons <- function(taxa = "CPUV_American_Shad_Age_0", scale = "Review_Stratum",print_name="Age-0 Delta Smelt"){
+  
+  region_lookup <- Binary_Data %>% 
+    select(Review_Region,Review_Stratum,SurveySeason)%>%
+    group_by(Review_Region,Review_Stratum,SurveySeason)%>%
+    summarise(N_Tows=n())
+  print(region_lookup)
+  
+  which_surveys <- Binary_Data %>% ungroup %>%select(SurveySeason,taxa)%>%group_by(SurveySeason)%>%tally()%>%filter(n>99)%>%
+    ungroup()%>%
+    select(SurveySeason)%>%with(.,as.vector(SurveySeason))
+  
+  
+  
+  trim_dat <- Binary_Data %>% filter(SurveySeason==which_surveys[1]) %>% 
+    select(scale,taxa,Year)%>%mutate(Year = as.factor(Year))
+  
+  names(trim_dat) <- c("Review_Stratum","species","Year")
+  
+  fit_glm <-  glm(data=trim_dat,species~Review_Stratum+Year,family="binomial")
+  
+  plot_dat <- effect("Review_Stratum",fit_glm)%>%data.frame()%>%mutate_if(is.numeric,round,4)%>%as_tibble()%>%
+    mutate(upper = if_else(lower==0&upper==1,0,upper))%>%add_column(Survey = paste(which_surveys[1]),.before="Review_Stratum")%>%
+    left_join(region_lookup,by="Review_Stratum")
+  
+  
+  
+  for(i in 2:length(which_surveys)){
+    
+    trim_dat <- Binary_Data %>% filter(SurveySeason==which_surveys[i]) %>% 
+      select(scale,taxa)
+    
+    names(trim_dat) <- c("Review_Stratum","species")
+    
+    fit_glm <-  glm(data=trim_dat,species~Review_Stratum,family="binomial")
+    
+    plot_dat_a <- effect("Review_Stratum",fit_glm)%>%data.frame()%>%mutate_if(is.numeric,round,4)%>%as_tibble()%>%
+      mutate(upper = if_else(lower==0&upper==1,0,upper))%>%add_column(Survey = which_surveys[i])%>%
+      left_join(region_lookup,by="Review_Stratum")
+    
+    plot_dat <- plot_dat %>% bind_rows(plot_dat_a)
+    
+  }
+  plot_dat <- plot_dat %>% mutate(Review_Stratum = factor(Review_Stratum,levels=c("San Pablo Bay and Carquinez Strait",
+                                                                                  "Napa River",
+                                                                                  "Suisun and Honker Bays",
+                                                                                  "Suisun Marsh",
+                                                                                  "Confluence",
+                                                                                  "South",
+                                                                                  "North and South Forks Mokelumne River",
+                                                                                  "Cache Slough",
+                                                                                  "Sacramento Mainstem",
+                                                                                  "Sacramento Ship Channel")))%>%
+    rename("Review Stratum" = "Review_Stratum")%>%
+    rename("Review Region" = "Review_Region")
+  
+  print(plot_dat %>% ggplot(aes(y=`Review Stratum`,x=fit,col=`Review Region`))+theme_bw()+
+          scale_color_manual(values=wes_palette(n=5, name="Zissou1"))+
+          geom_vline(xintercept = 0)+xlab("Probability of Catch")+
+          geom_linerange(aes(xmin=lower,xmax=upper),size=1.5)+ggtitle(paste(print_name,"catch probabilities by region and strata"))+
+          geom_point(size=2.5)+
+          facet_grid(cols=vars(Survey)))
+  return(plot_dat)
+}
 
-Review_Data_Tows%>%select(contains("Striped"))%>%view()
-Review_Data_Tows.a%>%select(contains("Striped"))%>%view()
+names(Binary_Data)
 
+Plot_Comparisons(taxa="CPUV_Delta_Smelt_Age_0",print_name = "Age-0 delta smelt")
+Plot_Comparisons(taxa="CPUV_Delta_Smelt_Age_1",print_name = "Age-1 delta smelt")
+Plot_Comparisons(taxa="CPUV_Striped_Bass_Age_0",print_name = "Age-0 striped bass")
+Plot_Comparisons(taxa="CPUV_Striped_Bass_Age_1",print_name = "Age-1 striped bass")
+Plot_Comparisons(taxa="CPUV_American_Shad_Age_0",print_name = "Age-0 American shad")
+Plot_Comparisons(taxa="CPUV_Crangon",print_name = "Crangon")
+Plot_Comparisons(taxa="CPUV_Gelatinous",print_name = "Gelatinous")
+
+
+table(Review_Data_Long$CommonName,Review_Data_Long$SurveySeason)
 
 

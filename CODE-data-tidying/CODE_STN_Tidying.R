@@ -116,7 +116,7 @@ STN_Tidy_All <- Sample %>%
 
 
 STN_Tidy <-  STN_Tidy_All%>%
-  select(-c(CatchRowID,LengthRowID,StationRowID,OrganismRowID,UserName,NetErrors:FieldsheetCorrected,
+  select(-c(Dead,MarkCode,CatchRowID,LengthRowID,StationRowID,OrganismRowID,UserName,NetErrors:FieldsheetCorrected,
             TowRowID,MeterSerial,MeterEstimate,OrganismCodeMaster:Region,
             RKI:`TNS Diet Area`,STRArea:FieldsheetCorrected))%>%
   rename(Comment1 = Comments,
@@ -126,8 +126,10 @@ STN_Tidy <-  STN_Tidy_All%>%
 
 
 
+
 save(STN_Tidy,file="TidyData/Individual Surveys/DATA_STN_Tidy.rda")
 
 
 
 
+table(STN_FMWT_FLAdjusted$Dead)

@@ -3,7 +3,7 @@
 #Prepared by Michael Tillotson
 #ICF
 #Updated May 05, 2021
-
+select <- dplyr::select
 require(tidyverse)
 require(stringr)
 
@@ -46,6 +46,8 @@ STN_FMWT_FLAdjusted <- STN_FMWT %>%
   filter(is.na(LengthFrequency_Adjusted)==F)%>%
   uncount(LengthFrequency_Adjusted)%>%select(-c(TotalCount:TotalMeasured))
 
+table(STN_FMWT_FLAdjusted$SurveySeason)
+
 
 CDFW_Surveys_Long <- STN_FMWT_FLAdjusted%>%
   add_row(SKT_Tidy)%>%
@@ -64,5 +66,3 @@ save(CDFW_Surveys_Long,
 
 
 
-
-  
