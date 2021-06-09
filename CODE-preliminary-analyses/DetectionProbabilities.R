@@ -1,5 +1,6 @@
 theme_set(theme_bw())
 library("sf")
+library("vegan")
 library("tidyverse")
 library("rnaturalearth")
 library("rnaturalearthdata")
@@ -22,19 +23,15 @@ EDSM_Strata <- st_read(
 
 
 
-
-Adjacent <- read_csv("SpatialData/Adjacent_Strata.csv")%>%mutate_all(as.factor)
-
 load("FINAL_REVIEW_DATA/CDFW_Pelagic_Review_Data.rda")
+
+
+
 
 StartEnd <- read_csv("SpatialData/TowStartEndPositions.csv")%>%
   mutate_at(c("StationCode","SurveySeason"),as.factor)%>%
   pivot_wider(names_from = "Type",values_from=(c("Longitude","Latitude")))
 
-
-StartEnd_SF <- StartEnd %>%
-  st_as_sf( coords = c("Longitude", "Latitude"), 
-            crs = 4326, agr = "constant")
 
 
 FieldDistances <- StartEnd %>%
@@ -111,25 +108,15 @@ Problem_Children <- Station_Distances %>% rownames_to_column("station_1")%>%
   mutate(Distance = Distance/1000)%>%
   filter(Distance >.5 & Distance < 1.25)
 
-#Adjacency Analyses
 
-Adjacent_Regions <- Adjacent%>%filter(Group_Level=="Region")%>%select(-Group_Level)%>%rename("Review_Region" = "Region")%>%
-  mutate(Review_Region = droplevels(Review_Region))
-Adjacent_Strata <- Adjacent%>% filter(Group_Level=="Stratum")%>%select(-Group_Level)%>%rename("Review_Stratum" = "Region")%>%
-  mutate(Review_Stratum = droplevels(Review_Stratum))
-
-tmat.g1 <- Review_Data_By_Station%>%full_join(Adjacent_Strata,by="Review_Stratum")%>%
-  filter(Adjacent_Grouping=="Group1")%>%
-  filter_at(vars(contains("CPUV")), any_vars(. != 0))
 
 
 
 #PMN1 <- adonis2(tmat.g1[,19:42]~tmat.g1$Review_Stratum*tmat.g1$SurveySeason)
 
-
-tmat.g1 %>% group_by(SurveySeason,Review_Stratum)%>%
-  summarise(DeltaSmelt = mean(CPUV_Delta_Smelt_Age_0),
-            stdv = sd(CPUV_Delta_Smelt_Age_0))%>%
+Review_Data_Tows %>% group_by(SurveySeason,Review_Stratum)%>%
+  summarise(DeltaSmelt = mean(CPUV_Delta_Smelt_Age_0^1/3),
+            stdv = sd(CPUV_Delta_Smelt_Age_0^1/3))%>%
   ggplot(aes(x=Review_Stratum,fill=SurveySeason,y=DeltaSmelt))+
   geom_bar(stat="identity",position="dodge")+
   geom_errorbar(aes(ymin=DeltaSmelt-stdv, ymax=DeltaSmelt+stdv), width=.2,
@@ -142,13 +129,13 @@ Prop0 <- function(x){sum(x!=0)/length(x)}
 
 
 DetectionData <- Review_Data_Tows %>%
-  group_by(SurveySeason,Review_Stratum,Year,Month)%>%
+  group_by(SurveySeason,Review_Region,Review_Stratum,Year,Month)%>%
   mutate(N_Tows = n())%>%
-  group_by(SurveySeason,Review_Stratum,Year,Month,N_Tows)%>%
+  group_by(SurveySeason,Review_Region,Review_Stratum,Year,Month,N_Tows)%>%
   summarize_at(vars(contains("CPUV")),Prop0)%>%
   mutate(Review_Stratum = factor(Review_Stratum,
                                  levels=c("San Pablo Bay and Carquinez Strait",
-                                          "Napa River*",
+                                          "Napa River",
                                           "Suisun and Honker Bays",
                                           "Suisun Marsh",
                                           "Confluence",
@@ -160,26 +147,70 @@ DetectionData <- Review_Data_Tows %>%
 
 
 
+
+
 names(DetectionData) <- gsub("CPUV_","",colnames(DetectionData))
 
 DetectionData %>% filter(N_Tows>2)%>%
-  ggplot(aes(x=Year,y=American_Shad_Age_0,col=SurveySeason))+geom_line()+
-  facet_grid(rows=vars(Month),cols=vars(Review_Stratum))
+  ggplot(aes(x=Year,y=White_Sturgeon_Age_0,col=SurveySeason))+geom_line()+
+  facet_grid(rows=vars(Month),cols=vars(Review_Region))+theme_bw()
+
+
+names(DetectionData)
+
+
+
 
 plot_detections <- function(taxa){
   
-    Data <- DetectionData %>% select(Year,Month,Review_Stratum,SurveySeason,taxa,N_Tows)
+    Data <- DetectionData %>% select(Year,Month,Review_Region,Review_Stratum,SurveySeason,taxa,N_Tows)
 
-    names(Data)[5] <- "Encounter Proportion"
+    names(Data)[6] <- "Encounter Proportion"
 
     Data %>% filter(N_Tows>2)%>%
-      ggplot(aes(x=Year,y=`Encounter Proportion`,col=SurveySeason))+geom_line()+
-      facet_grid(rows=vars(Month),cols=vars(Review_Stratum))
+      ggplot(aes(x=Year,y=`Encounter Proportion`,col=SurveySeason))+geom_point()+geom_smooth(method="gam",k=1)+
+      facet_grid(rows=vars(Month),cols=vars(Review_Region))+theme_bw()+ggtitle(paste(taxa))
 
 }
 
 plot_detections("Tridentiger_Spp._Age_0")
+plot_detections("Pacific_Herring_Age_0")
+plot_detections("Longfin_Smelt_Age_0")
+plot_detections("American_Shad_Age_0")
+plot_detections("Crangon")
+plot_detections("Striped_Bass_Age_1")
+plot_detections("Pacific_Herring_Age_0")
+plot_detections("Delta_Smelt_Age_0")
+
+
+table(Review_Data_Long$CommonName,Review_Data_Long$SurveySeason)
 
 
 
-DetectionData %>% 
+table(Review_Data_Tows$CPUV_American_Shad_Age_0,Review_Data_Tows)
+
+
+
+
+#==========================Species ANOVAS====================================
+
+AS0_anova <- Review_Data_Tows%>%filter(SurveySeason=="FMWT")%>%with(.,aov(CPUV_American_Shad_Age_0~Review_Stratum))
+
+TukeyHSD(AS0_anova)%>%plot()
+
+
+Binary_Data <- Review_Data_Tows%>%mutate_at(vars(contains("CPUV")),~if_else(.==0,0,1))
+
+
+
+AS0_glm <- Binary_Data %>% filter(SurveySeason=="FMWT") %>% 
+  glm(data=.,CPUV_Northern_Anchovy_Age_0~Review_Stratum,family="binomial")
+
+
+effect("Review_Stratum",AS0_glm)%>%data.frame()%>%mutate_if(is.numeric,round,2)
+
+Review_Data_Tows%>%select(contains("Striped"))%>%view()
+Review_Data_Tows.a%>%select(contains("Striped"))%>%view()
+
+
+

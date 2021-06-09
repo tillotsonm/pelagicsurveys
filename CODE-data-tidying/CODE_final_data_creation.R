@@ -204,12 +204,6 @@ Working_Data_Review <- Working_Data %>%
                   Age,
                   Review_Region,
                   Review_Stratum))%>%
-  group_by(SurveySeason,SampleDate,StationCode,TowNumber,CommonName)%>%
-  mutate(Catch = n())%>%
-  mutate(CPUV = Catch/Volume)%>%
-  mutate(CPUV = round(CPUV,2))%>%
-  ungroup()%>%
-  select(-Catch)%>%
   mutate(CommonName = recode(CommonName,
                              "Shimofuri_Goby"= "Tridentiger_Spp.",
                              "Shokihaze_Goby" = "Tridentiger_Spp."))%>%
@@ -222,8 +216,14 @@ Working_Data_Review <- Working_Data %>%
                            "Longfin_Smelt","Northern_Anchovy","Striped_Bass",
                            "Threadfin_Shad","White_Catfish","Tridentiger_Spp.")))%>%
   
+  #Calculate CPUV by species and age
+  group_by(SurveySeason,SampleDate,StationCode,TowNumber,CommonName)%>%
+  mutate(Catch = n())%>%
+  mutate(CPUV = Catch/Volume)%>%
+  mutate(CPUV = round(CPUV,2))%>%
+
+  
   #Calculate mean forklength by age and species
-  group_by(SurveySeason,SampleDate,StationCode,TowNumber,CommonName)%>%  
   mutate(Mean_Length = mean(ForkLength,na.rm=T),
     Mean_Length = if_else(!(CommonName %in% c("Other_Crustacean",
                                                    "Other_Fish",
@@ -260,14 +260,28 @@ Working_Data_Review <- Working_Data %>%
   mutate(Review_Region = replace_na(as.character(Review_Region),"Far West"))%>%
   mutate(Review_Region = as.factor(Review_Region))%>%
   mutate(Review_Stratum = replace_na(as.character(Review_Stratum),"San Pablo Bay and Carquinez Strait"))%>%
-  mutate(Review_Stratum = as.factor(Review_Stratum))
-
-
-
+  mutate(Review_Stratum = as.factor(Review_Stratum))%>%
+  group_by(CommonName)%>%
+  mutate(AgeSpeciesCount = n())%>%
+  ungroup()%>%
+  filter(AgeSpeciesCount>99)%>%
+  select(-AgeSpeciesCount)%>%
+  mutate(Review_Stratum = factor(Review_Stratum,
+                                 levels=c("San Pablo Bay and Carquinez Strait",
+                                          "Napa River",
+                                          "Suisun and Honker Bays",
+                                          "Suisun Marsh",
+                                          "Confluence",
+                                          "Cache Slough",
+                                          "South",
+                                          "North and South Forks Mokelumne River",
+                                          "Sacramento Mainstem",
+                                          "Sacramento Ship Channel")))
+  
 
 Review_Data_Tows <- Working_Data_Review %>%
   filter(is.na(Station_Latitude)==F)%>%
-  select(-c(Age,ForkLength))%>%
+  select(-c(Age,ForkLength,Catch))%>%
   distinct(across(c(StationCode,SampleDate,TowNumber,CommonName,SurveySeason)),.keep_all = TRUE)%>%
   pivot_wider(values_from = c(CPUV,Mean_Length),names_from = CommonName)%>%
   mutate_at(vars(contains("CPUV")), ~replace_na(., 0))%>%
@@ -306,9 +320,10 @@ Review_Data_Tows <- Working_Data_Review %>%
   
   #add variable listing surveys
   group_by(StationCode)%>%
-  mutate(Surveys = paste(unique(SurveySeason),collapse=","),.after = StationCode)%>%
-  ungroup()%>%
-  select(-c(CPUV_Tridentiger_Spp._Age_1,CPUV_Starry_Flounder_Age_1,CPUV_Chinook_Salmon_Age_1))
+  mutate(Surveys = paste(unique(SurveySeason),collapse=","),.after = StationCode)
+  ungroup()
+
+
 
 
 #Check proportion of 0-catch tows for each species/age
@@ -394,9 +409,6 @@ write_csv(Review_Data_Tows,"Pelagic_Review_Data.csv")
 
 
 
-Prop_Detect <- Review_Data_By_Station%>%
-  group_by(Review_Region,Review_Stratum,SurveySeason)%>%
-  summarise_at(vars(contains("CPUV")), ~round(sum(.!= 0)/n(),2))
 
 
 
