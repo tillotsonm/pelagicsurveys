@@ -319,8 +319,9 @@ Review_Data_Tows <- Working_Data_Review %>%
   select(-c(Mean_Lat,Mean_Lon))%>%
   
   #add variable listing surveys
+  ungroup()%>%
   group_by(StationCode)%>%
-  mutate(Surveys = paste(unique(SurveySeason),collapse=","),.after = StationCode)
+  mutate(Surveys = paste(unique(SurveySeason),collapse=","),.after = StationCode)%>%
   ungroup()
 
 
@@ -366,6 +367,7 @@ Mean <- function(x){return(mean(x,na.rm=T))}
 CV <- function(x){return(sd(x,na.rm=T)/mean(x,na.rm=T))}
 
 
+
 Review_Data_Locations <- Review_Data_Tows %>% 
   select(SurveySeason:CPUV_Prickly_Sculpin_Age_0)%>%
   select(-c(Tide,Weather,Waves,TowNumber))%>%
@@ -373,7 +375,6 @@ Review_Data_Locations <- Review_Data_Tows %>%
   mutate(N_Dates = length(unique(SampleDate)),
          N_Years = length(unique(Year)),
          Mean_TowsPerYear = round(N_Dates/N_Years,0))%>%
-  mutate(Surveys = paste(unique(SurveySeason),collapse=","),.after = StationCode)%>%
   group_by(StationCode)%>%
   mutate_at(c("Turbidity","Salinity","Temperature","Depth","TowDepth","Volume"),list(Mean=Mean,CV=CV))%>%
   mutate_at(vars(contains("CPUV")),mean)%>%

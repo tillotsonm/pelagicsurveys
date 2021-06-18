@@ -212,7 +212,7 @@ DJFMP_Tidy <- DJFMP_Raw%>%tibble()%>%
   mutate(SurveySeason = "DJFMP")%>%
   rename("Gear" = "MethodCode")
 
-
+DJFMP_Tidy %>% filter(LengthFrequency_Adjusted>TotalCount)%>%view()
 #=====================================================================================
 #Join all additional surveys
 Additional_Surveys <- EDSM_Tidy %>% 

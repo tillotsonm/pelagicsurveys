@@ -109,4 +109,7 @@ SKT_Tidy <- SKT_Tidy_All %>%   select(-c(CODE,
 
 save(SKT_Tidy,file="TidyData/Individual Surveys/DATA_SKT_Tidy.rda")
   
+SKT_Tidy%>%filter(SurveyNumber<10)%>%with(.,(table(CommonName)))
+
+
 

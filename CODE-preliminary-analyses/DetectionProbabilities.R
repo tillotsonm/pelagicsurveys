@@ -10,6 +10,8 @@ library("RColorBrewer")
 library("spatialEco")
 library("wesanderson")
 library("multcomp")
+library("lme4")
+library(effects)
 library(geosphere)
 select <- dplyr::select
 filter <- dplyr::filter
@@ -28,13 +30,16 @@ EDSM_Strata <- st_read(
 load("FINAL_REVIEW_DATA/CDFW_Pelagic_Review_Data.rda")
 
 
+table(Review_Data_Locations$Review_Stratum)
 
 
 StartEnd <- read_csv("SpatialData/TowStartEndPositions.csv")%>%
   mutate_at(c("StationCode","SurveySeason"),as.factor)%>%
   pivot_wider(names_from = "Type",values_from=(c("Longitude","Latitude")))
 
+SurveyList1 <- Review_Data_Locations%>%select(StationCode,Surveys)%>%rename("Station1"="StationCode","Surveys1"="Surveys")
 
+SurveyList2 <- Review_Data_Locations%>%select(StationCode,Surveys)%>%rename("Station2"="StationCode","Surveys2"="Surveys")
 
 FieldDistances <- StartEnd %>%
   mutate(TowDist = pmap_dbl(., ~
@@ -52,6 +57,27 @@ FieldDistances <- StartEnd %>%
          Station_Mean_StartDist = mean(DistToStation_Start,na.rm=T),
          Station_Mean_EndDist = mean(DistToStation_End,na.rm=T))%>%
   ungroup()
+
+
+Pairwise_Distances <- distm(Review_Data_Locations[,4:3],fun = distHaversine)%>%
+  data.frame()%>%add_column(Station1 = (Review_Data_Locations$StationCode),.before=1)
+
+names(Pairwise_Distances)[2:159] <- as.character(Review_Data_Locations$StationCode)
+
+as.actual.numeric <- function(x){as.numeric(as.character(x))}
+
+Pairwise_Distances <- Pairwise_Distances%>% pivot_longer(cols=c("307":"912"),names_to="Station2",values_to="Distance")%>%
+  filter(Distance!=0 & Distance<2000)%>%arrange(Distance)%>%
+  mutate_all(as.actual.numeric)%>%
+  rowwise()%>%
+  mutate(chopper = sum(c(Station1,Station2,Distance)))%>%
+  distinct(across("chopper"),.keep_all=T)%>%select(-chopper)%>%
+  mutate_at(c("Station1","Station2"),as.factor)%>%
+  left_join(SurveyList1,"Station1")%>%
+  left_join(SurveyList2,"Station2")
+  
+  
+
 
 
 FieldDistances %>% 
@@ -189,41 +215,54 @@ plot_detections("Delta_Smelt_Age_0")
 #==========================Species ANOVAS====================================
 
 Binary_Data <- Review_Data_Tows%>%mutate_at(vars(contains("CPUV")),~if_else(.==0,0,1))%>%ungroup()%>%
-  select(-(contains("Length")|contains("Other")))
-names(Binary_Data)
+  select(-(contains("Length")|contains("Other")))%>%mutate(Year=as.factor(Year))
 
-
-
-a_glm <-  glm(data=Binary_Data,CPUV_Delta_Smelt_Age_0~Review_Stratum+as.factor(Year),family="binomial")
-
-summary(a_glm)
-
-summary(glht(a_glm, mcp(Review_Stratum="Tukey")))
 
 
 Plot_Comparisons <- function(taxa = "CPUV_American_Shad_Age_0", scale = "Review_Stratum",print_name="Age-0 Delta Smelt"){
   
   region_lookup <- Binary_Data %>% 
-    select(Review_Region,Review_Stratum,SurveySeason)%>%
-    group_by(Review_Region,Review_Stratum,SurveySeason)%>%
-    summarise(N_Tows=n())
-  print(region_lookup)
+    select(Review_Region,Review_Stratum)%>%
+    distinct()
   
-  which_surveys <- Binary_Data %>% ungroup %>%select(SurveySeason,taxa)%>%group_by(SurveySeason)%>%tally()%>%filter(n>99)%>%
+  which_surveys <- Binary_Data %>%
+    ungroup %>%
+    select(SurveySeason,taxa)
+  
+  names(which_surveys) <- c("SurveySeason","taxa")
+  
+  
+  which_surveys <-  which_surveys%>%
+  group_by(SurveySeason)%>%
+  summarise(n=n(),detection=sum(taxa))%>%
+    filter(n>99&detection!=0)%>%
     ungroup()%>%
     select(SurveySeason)%>%with(.,as.vector(SurveySeason))
   
+print(which_surveys)
   
   
   trim_dat <- Binary_Data %>% filter(SurveySeason==which_surveys[1]) %>% 
-    select(scale,taxa,Year)%>%mutate(Year = as.factor(Year))
+    select(scale,taxa,Year,StationCode)%>%mutate(Year = as.factor(Year))
   
-  names(trim_dat) <- c("Review_Stratum","species","Year")
+  names(trim_dat) <- c("Review_Stratum","species","Year","StationCode")
   
-  fit_glm <-  glm(data=trim_dat,species~Review_Stratum+Year,family="binomial")
   
-  plot_dat <- effect("Review_Stratum",fit_glm)%>%data.frame()%>%mutate_if(is.numeric,round,4)%>%as_tibble()%>%
-    mutate(upper = if_else(lower==0&upper==1,0,upper))%>%add_column(Survey = paste(which_surveys[1]),.before="Review_Stratum")%>%
+  fit_glm <-  glmer(data=trim_dat, species~0+Review_Stratum+(1|Year)+(1|StationCode),family="binomial",nAGQ=0)
+  
+  ilink <- family(fit_glm)$linkinv
+  
+  plot_dat <- 
+    summary(fit_glm)$coefficients%>%data.frame()%>%
+    rownames_to_column("Review_Stratum")%>%
+    rename("SE" = "Std..Error", "p_value" = "Pr...z..")%>%
+    select(-z.value)%>%
+    mutate(Upper=Estimate+(2*SE),
+           Lower=Estimate-(2*SE))%>%
+    mutate_at(vars(c(Estimate,Upper,Lower)),ilink)%>%
+    mutate_if(is.numeric,round,4)%>%as_tibble()%>%
+    mutate(Review_Stratum = str_remove(Review_Stratum,"Review_Stratum"))%>%
+    add_column(Survey = which_surveys[1])%>%
     left_join(region_lookup,by="Review_Stratum")
   
   
@@ -231,17 +270,28 @@ Plot_Comparisons <- function(taxa = "CPUV_American_Shad_Age_0", scale = "Review_
   for(i in 2:length(which_surveys)){
     
     trim_dat <- Binary_Data %>% filter(SurveySeason==which_surveys[i]) %>% 
-      select(scale,taxa)
+      select(scale,taxa,Year,StationCode)%>%mutate(Year = as.factor(Year))
     
-    names(trim_dat) <- c("Review_Stratum","species")
+    names(trim_dat) <- c("Review_Stratum","species","Year","StationCode")
     
-    fit_glm <-  glm(data=trim_dat,species~Review_Stratum,family="binomial")
+    fit_glm <-  glmer(data=trim_dat, species~0+Review_Stratum+(1|Year)+(1|StationCode),family="binomial",nAGQ=0)
     
-    plot_dat_a <- effect("Review_Stratum",fit_glm)%>%data.frame()%>%mutate_if(is.numeric,round,4)%>%as_tibble()%>%
-      mutate(upper = if_else(lower==0&upper==1,0,upper))%>%add_column(Survey = which_surveys[i])%>%
+    plot_dat_a <- 
+      summary(fit_glm)$coefficients%>%data.frame()%>%
+      rownames_to_column("Review_Stratum")%>%
+      rename("SE" = "Std..Error", "p_value" = "Pr...z..")%>%
+      select(-z.value)%>%
+      mutate(Upper=Estimate+(2*SE),
+             Lower=Estimate-(2*SE))%>%
+      mutate_at(vars(c(Estimate,Upper,Lower)),ilink)%>%
+      mutate_if(is.numeric,round,4)%>%as_tibble()%>%
+      mutate(Review_Stratum = str_remove(Review_Stratum,"Review_Stratum"))%>%
+      add_column(Survey = which_surveys[i])%>%
       left_join(region_lookup,by="Review_Stratum")
     
     plot_dat <- plot_dat %>% bind_rows(plot_dat_a)
+    
+
     
   }
   plot_dat <- plot_dat %>% mutate(Review_Stratum = factor(Review_Stratum,levels=c("San Pablo Bay and Carquinez Strait",
@@ -255,14 +305,17 @@ Plot_Comparisons <- function(taxa = "CPUV_American_Shad_Age_0", scale = "Review_
                                                                                   "Sacramento Mainstem",
                                                                                   "Sacramento Ship Channel")))%>%
     rename("Review Stratum" = "Review_Stratum")%>%
-    rename("Review Region" = "Review_Region")
+    rename("Review Region" = "Review_Region")%>%
+    mutate(Upper = if_else(Upper==1 & Estimate==0,0,Upper))%>%
+    mutate(Lower = if_else(Upper==1 & Estimate==1,1,Lower))
   
-  print(plot_dat %>% ggplot(aes(y=`Review Stratum`,x=fit,col=`Review Region`))+theme_bw()+
+  print(plot_dat %>% ggplot(aes(y=`Review Stratum`,x=Estimate,col=`Review Region`))+theme_bw()+
           scale_color_manual(values=wes_palette(n=5, name="Zissou1"))+
           geom_vline(xintercept = 0)+xlab("Probability of Catch")+
-          geom_linerange(aes(xmin=lower,xmax=upper),size=1.5)+ggtitle(paste(print_name,"catch probabilities by region and strata"))+
+          geom_linerange(aes(xmin=Lower,xmax=Upper),size=1.5)+ggtitle(paste(print_name,"catch probabilities by region and strata"))+
           geom_point(size=2.5)+
           facet_grid(cols=vars(Survey)))
+  
   return(plot_dat)
 }
 
@@ -270,13 +323,23 @@ names(Binary_Data)
 
 Plot_Comparisons(taxa="CPUV_Delta_Smelt_Age_0",print_name = "Age-0 delta smelt")
 Plot_Comparisons(taxa="CPUV_Delta_Smelt_Age_1",print_name = "Age-1 delta smelt")
+Plot_Comparisons(taxa="CPUV_Longfin_Smelt_Age_0",print_name = "Age-0 longfin smelt")
+Plot_Comparisons(taxa="CPUV_Longfin_Smelt_Age_1",print_name = "Age-1 longfin smelt")
 Plot_Comparisons(taxa="CPUV_Striped_Bass_Age_0",print_name = "Age-0 striped bass")
 Plot_Comparisons(taxa="CPUV_Striped_Bass_Age_1",print_name = "Age-1 striped bass")
 Plot_Comparisons(taxa="CPUV_American_Shad_Age_0",print_name = "Age-0 American shad")
+Plot_Comparisons(taxa="CPUV_American_Shad_Age_1",print_name = "Age-1 American shad")
+Plot_Comparisons(taxa="CPUV_Threadfin_Shad_Age_0",print_name = "Age-0 Threadfin shad")
+Plot_Comparisons(taxa="CPUV_Threadfin_Shad_Age_1",print_name = "Age-1 Threadfin shad")
 Plot_Comparisons(taxa="CPUV_Crangon",print_name = "Crangon")
 Plot_Comparisons(taxa="CPUV_Gelatinous",print_name = "Gelatinous")
+Plot_Comparisons(taxa="CPUV_Tridentiger_Spp._Age_0",print_name = "Age-0 Tridentiger Spp.")
 
 
-table(Review_Data_Long$CommonName,Review_Data_Long$SurveySeason)
+
+
+
+
+
 
 
