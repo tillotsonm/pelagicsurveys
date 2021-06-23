@@ -229,7 +229,7 @@ Working_Long <-  CDFW_Surveys_Long %>%
   #1,000,000 when meter rolled over (i.e. Out < In)
   mutate(MeterOut = if_else(MeterOut<MeterIn,MeterOut+1000000,MeterOut),
          MeterDifference1 = MeterOut-MeterIn,
-         MeterDifference = if_else(MeterDifference<0|MeterDifference1>10000,
+         MeterDifference = if_else(MeterDifference<0|MeterDifference1>35000,
                                    MeterDifference1,MeterDifference))%>%
   mutate(MeterDifference = if_else(is.na(MeterDifference)==T,MeterDifference1,MeterDifference))%>%
   #select(-MeterDifference1)%>%
