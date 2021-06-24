@@ -57,9 +57,9 @@ Post_processor<-function(model, max_year=2018, model_name=NULL, Intervals=NULL){
 model_diagnose<-function(model){
   sum<-summary(model)
   out<-tibble(par=c(names(sum$fixed[,1]), names(sum$random)), 
-              Bulk_ESS=c(sum$fixed[,"Bulk_ESS"], sum$random$ID[,"Bulk_ESS"], sum$random$Station_fac[,"Bulk_ESS"]),
-              Tail_ESS=c(sum$fixed[,"Tail_ESS"], sum$random$ID[,"Tail_ESS"], sum$random$Station_fac[,"Tail_ESS"]),
-              Rhat=c(sum$fixed[,"Rhat"], sum$random$ID[,"Rhat"], sum$random$Station_fac[,"Rhat"]))
+              Bulk_ESS=c(sum$fixed[,"Bulk_ESS"], sum$random$id[,"Bulk_ESS"], sum$random$station_fac[,"Bulk_ESS"]),
+              Tail_ESS=c(sum$fixed[,"Tail_ESS"], sum$random$id[,"Tail_ESS"], sum$random$station_fac[,"Tail_ESS"]),
+              Rhat=c(sum$fixed[,"Rhat"], sum$random$id[,"Rhat"], sum$random$station_fac[,"Rhat"]))
   Bulk_ESS<-filter(out, Bulk_ESS<300)%>%
     pull(par)
   Tail_ESS<-filter(out, Tail_ESS<300)%>%
