@@ -1,11 +1,13 @@
 # Bayesian catch analysis
 
-This directory contains files for a Bayesian analysis of FMWT catch data for several species: 
+This directory contains files for a Bayesian analysis of FMWT catch data for several species of interest, including: 
 1. Longfin Smelt (age-0 and age-1); 
 2. Striped Bass (age-0); 
 3. American Shad (age-0 and age-1); 
 4. Northern Anchovy (age-0), and; 
 5. Threadfin Shad (age-0).
+
+Note: The R scripts assume that they are being run from the top level of the directory for this repository, i.e. from the './pelagicsurveys/' directory level.  
 
 The analysis generally follows the methods for chapter 6 of the LTRM report and [adapts the code developed by Bashevkin](https://github.com/sbashevkin/LTMRpilot/tree/master/Univariate%20analyses), i.e. a Bayesian GLMM is used to perform something of a retrospective analysis to compare annual estimates of catch (a proxy for abundance) under scenarios with varying levels of sampling effort (e.g. dropping a certain percentage of tows in a seasonal survey stratum). 
 
