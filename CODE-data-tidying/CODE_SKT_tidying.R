@@ -12,11 +12,7 @@ setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
 Sample <- read_csv("RawData/SKT/tblSample.csv",
                    col_types=c("dDdfdddddddddffdccc"))%>%
-  rename(MeterSerial = MeterNumber)%>%
-  #Combine replicated tows
-  distinct(across(c("StationCode","SampleDate")),.keep_all=T)
-
-
+  rename(MeterSerial = MeterNumber)
 
 
 
@@ -43,6 +39,8 @@ luTide <- read_csv("RawData/SKT/luTide.csv",col_types = "ff")
 
 luSex <- read_csv("RawData/SKT/tblSexLookUp.csv",col_types = "ff")
 
+Catch%>%filter(OrganismCode==19)%>%summarise(sum(Catch))
+
 
 SKT_Tidy_All <- Sample %>% 
   rename("TowDirectionID"="TowDirectionCode")%>%  #========Rename TowDirection======
@@ -61,7 +59,7 @@ SKT_Tidy_All <- Sample %>%
   rename(CODE = Sex)%>%
   left_join(luSex,by="CODE")%>%
   rename(Sex = Description)%>%
-  select(-c("ReproductiveStage","2nd Stage",LengthRowID,CatchRowID,FishID1,FishID2,SampleRowID,Sex))%>%
+  select(-c("ReproductiveStage","2nd Stage",LengthRowID,CatchRowID,FishID1,FishID2,SampleRowID))%>%
   rename(Station_Origin = `Station Origin`,
          StationCode = Station,
          TemperatureTop = WaterTemperature,
@@ -85,26 +83,20 @@ SKT_Tidy_All <- Sample %>%
   relocate(Survey_Station, .after=JulianDay)%>%
   add_column(TowNumber=1,.after = "SurveyNumber")%>%
   #Create CommonName for No Catch Tows and correct Catch, LengthFrequency columns
-  ungroup()%>%
-  group_by(StationCode,SampleDate)%>%
-  mutate(sumCatch = sum(Catch,na.rm=T))%>%
-  mutate(CommonName = if_else(sumCatch==0,"No Catch",as.character(CommonName)),
-         Catch = if_else(CommonName=="No Catch",1,Catch),
+  mutate(CommonName = if_else(is.na(Catch)==T,"No Catch",as.character(CommonName)),
+         Catch = if_else(is.na(Catch)==T,1,Catch),
          CommonName = as.factor(CommonName))%>%
-  #Remove lingering NA catch rows. Not sure where they're coming from, but it's only a handful of tows
-  filter(is.na(Catch)==F)%>%
-  ungroup()%>%select(-sumCatch)%>%
   rename(Comment1 = SampleComments,
          Comment2 = CatchComments,
          Comment3 = Comments)%>%
   #Remove duplicate length rows for species-date-catch combinations
+  distinct(across(c(SampleDate, StationCode, CommonName, ForkLength)),.keep_all = T)%>%
   #==================Deal with unmeasured fish==============================
   group_by(SampleDate, StationCode, CommonName)%>%
   add_tally(name="TotalMeasured")%>%
   group_by(SampleDate, StationCode, CommonName, ForkLength)%>%
   add_tally(name="LengthFrequency")%>%
   mutate(LengthFrequency_Adjusted = round(Catch*(LengthFrequency/TotalMeasured),0))%>%
-  ungroup()%>%
   uncount(LengthFrequency_Adjusted)%>%select(-c(LengthFrequency,TotalMeasured))
 
 
@@ -116,6 +108,8 @@ SKT_Tidy <- SKT_Tidy_All %>%   select(-c(CODE,
                                          OrganismCode,NameInSAS,Volume,Start_Longitude,Start_Latitude))
 
 save(SKT_Tidy,file="TidyData/Individual Surveys/DATA_SKT_Tidy.rda")
-
   
+SKT_Tidy%>%filter(SurveyNumber<10)%>%with(.,(table(CommonName)))
+
+
 

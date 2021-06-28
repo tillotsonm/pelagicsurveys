@@ -286,6 +286,13 @@ Review_Data_Tows <- Working_Data_Review %>%
   pivot_wider(values_from = c(CPUV,Mean_Length),names_from = CommonName)%>%
   mutate_at(vars(contains("CPUV")), ~replace_na(., 0))%>%
   select(-c(CPUV_No_Catch,Mean_Length_No_Catch))%>%
+  
+  #Drop presumed duplicated tows that have the same date, station and tow number, but differences in 
+  #Environmental measurements. 
+  
+  distinct(across(c("SampleDate","StationCode","SurveySeason","TowNumber")),.keep_all = T)%>%
+  
+  #Add review strata
 
   
   #Arrange factors according to mean longitude
@@ -316,6 +323,7 @@ Review_Data_Tows <- Working_Data_Review %>%
   group_by(StationCode)%>%
   mutate(Surveys = paste(unique(SurveySeason),collapse=","),.after = StationCode)%>%
   ungroup()
+
 
 
 
@@ -399,6 +407,9 @@ write_csv(Review_Data_Tows,"Pelagic_Review_Data.csv")
 #   select(SurveySeason,Region,SubRegion,N_Stations)%>%
 #   distinct()%>%
 #   write_csv("StationsPerSubregion.csv")
+
+
+
 
 
 

@@ -183,7 +183,7 @@ Multiple_Comparisons <- function(taxa = "CPUV_American_Shad_Age_0"){
 
   # Region level model fits and output
   
-  How_Many_Groups <- data.frame(SurveySeason = which_surveys, min_groups=NA, max_groups=NA,mean_groups=NA,min_DAICc = NA)
+  How_Many_Groups <- data.frame(SurveySeason = which_surveys, min_groups=NA, max_groups=NA,best_groups=NA,min_DAICc = NA)
   
   
   for(i in 1:length(which_surveys)){
@@ -200,11 +200,11 @@ Multiple_Comparisons <- function(taxa = "CPUV_American_Shad_Age_0"){
 
   print(which_surveys[i])
 
-  temp <- reg_output$model.table%>%data.frame()%>%filter(Delta_AICc<10)%>%mutate(K=K-2)
+  temp <- reg_output$model.table%>%data.frame()%>%filter(Delta_AICc<4)%>%mutate(K=K-2)
 
   How_Many_Groups[i,2] <- min(temp$K)
   How_Many_Groups[i,3] <- max(temp$K)
-  How_Many_Groups[i,4] <- mean(temp$K)
+  How_Many_Groups[i,4] <- temp$K[1]
   How_Many_Groups[i,5] <- temp$Delta_AICc[2]
 
   }
@@ -322,4 +322,4 @@ predict(test_mod)%>%glob.ilink()%>%bind_cols(dat_slice$CPUV_Pacific_Herring_Age_
   ggplot(aes(x=Obs,y=Pred))+geom_boxplot()
 
 
-multComp()
+inv.logit

@@ -24,9 +24,7 @@ Sample <- read_csv("RawData/FMWT/Sample.csv",
                  Turbidity,
                  StartLatDegrees:EndLongSeconds,
                  MeterDifference,
-                 TowDirectionCode),as.numeric)%>%
-  #Remove Mysid net tows
-  filter(MethodCode=="MWTR")
+                 TowDirectionCode),as.numeric)
 
 
 Catch <- read_csv("RawData/FMWT/Catch.csv",col_types = "ddddD")%>%
