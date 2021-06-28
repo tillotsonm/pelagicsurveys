@@ -1,5 +1,5 @@
 #====================================================================
-#===C
+#===
 
 #Prepared by Michael Tillotson
 #ICF
@@ -10,17 +10,52 @@ require(ggforce)
 require(tidyverse)
 require(lubridate)
 require(ggridges)
+library("sf")
+library("rnaturalearth")
+library("rnaturalearthdata")
+library("rnaturalearthhires")
+library("stringr")
+library("RColorBrewer")
+library("spatialEco")
+library("vegan")
+library("lubridate")
+select <- dplyr::select
+filter <- dplyr::filter
 theme_set(theme_bw())
-
 
 #Set working directory
 setwd("C:/Users/40545/Documents/GitHub/pelagicsurveys")
 
+#==================================================================================
+
+
 load("MASTER_Data/MASTER_Env_Hydro.rda")
-load("MASTER_Data/MASTER_Station.rda")
-load("MASTER_Data/MASTER_Tow_Catch.rda")
-load("MASTER_Data/MASTER_Long_Format.rda")
 load("MASTER_Data/MASTER_All_Surveys.rda")
+load("MASTER_Data/MASTER_All_Surveys_LF.rda")
+load("MASTER_Data/MASTER_CDFWSurveys_Long_Format.rda")
+load("FINAL_REVIEW_DATA/CDFW_Pelagic_Review_Data.rda")
+
+#===================================================================================
+#Load mapping stuff
+Review_Strata <- read_csv("CODE-data-tidying/Review_Strata.csv",col_types = "fff")
+
+marsh <- st_read(
+  "CODE-spatial-analysis/hydro-delta-marsh/hydro_delta_marsh.shp")
+
+EDSM_Strata_Temp <- st_read(
+  "CODE-spatial-analysis/DSm_Subregions_UTM10NAD83/DSm_Subregions_UTM10NAD83.shp")
+
+region_lookup <- Review_Data_By_Station %>% 
+  select(Review_Region,Region,SubRegion,Review_Stratum)%>%
+  distinct()%>%
+  mutate(Review_Stratum = recode(Review_Stratum,"Napa River*" = "Napa River"))
+
+EDSM_Strata<- EDSM_Strata_Temp %>%
+  left_join(region_lookup,by=c("Region","SubRegion"))%>%
+  mutate(Review_Stratum = replace_na(Review_Stratum,"South"))%>%
+  mutate(Review_Region = replace_na(Review_Region,"South"))%>%  
+  select(-c(OBJECTID,OBJECTID_1,Shape_Leng,Shape_Area))
+
 
 
 
@@ -82,8 +117,19 @@ All_Surveys <- All_Surveys_Master %>%
   mutate(CommonName = recode(CommonName,
                              "Mississippi_Silverside" = "Inland_Silverside",
                              "Striped_Bass_Age_0" = "Striped_Bass",
-                             "Striped_Bass_Age_1" = "Striped_Bass"))
+                             "Striped_Bass_Age_1" = "Striped_Bass"))%>%
+  left_join(Review_Strata, by="SubRegion")%>%relocate(Review_Region:Review_Stratum,.after=SubRegion)%>%
+  mutate(SubRegion = if_else(SurveySeason=="FMWT",replace_na(as.character(SubRegion),"SF and Outer SP Bays"),as.character(SubRegion)))%>%
+  mutate(SubRegion = as.factor(SubRegion))%>%
+  mutate(Region = if_else(SubRegion == "SF and Outer SP Bays"&SurveySeason=="FMWT","Far West",as.character(Region)))%>%
+  mutate(Region = as.factor(Region))%>%
+  mutate(Review_Region = if_else(SurveySeason=="FMWT",replace_na(as.character(Review_Region),"SF and Outer SP Bays"),as.character(Review_Region)))%>%
+  mutate(Review_Region = as.factor(Review_Region))%>%
+  mutate(Review_Stratum = if_else(SurveySeason=="FMWT",replace_na(as.character(Review_Stratum),
+                                                                  "San Pablo Bay and Carquinez Strait"),as.character(Review_Stratum)))%>%
+  mutate(Review_Stratum = as.factor(Review_Stratum))
   
+
   #===List of target species
   Target_Species <- data.frame(CommonName = c("American_Shad",
                                               "Northern_Anchovy",
@@ -101,7 +147,8 @@ All_Surveys <- All_Surveys_Master %>%
                                               "Shokihaze_Goby",
                                               "Shimofuri_Goby",
                                               "Tridentiger_Spp.",
-                                              "Prickly_Sculpin"
+                                              "Prickly_Sculpin",
+                                              "No_Catch"
                                ))
   
   All_Targets <- All_Surveys %>% 
@@ -110,17 +157,11 @@ All_Surveys <- All_Surveys_Master %>%
     mutate(SurveyCategory = if_else(NetType=="Beach Seine","Beach Seine",SurveyCategory))%>%
     mutate(SurveyCategory = if_else(NetType=="Bottom Trawl","Bottom Trawl",SurveyCategory))
    
-
   
+All_Surveys <- All_Surveys%>%mutate(Target = if_else(CommonName %in% Target_Species$CommonName,TRUE,FALSE))%>%
+  filter(Year > 2001)
   
-  All_Surveys <- All_Surveys %>% mutate(Target = if_else(CommonName %in% Target_Species$CommonName,TRUE,FALSE))
-  
-  Long_Master <- Long_Master %>% 
-    mutate(CommonName = recode(CommonName,
-                               "Mississippi_Silverside" = "Inland_Silverside",
-                               "Striped_Bass_Age_0" = "Striped_Bass",
-                               "Striped_Bass_Age_1" = "Striped_Bass"))%>%
-  mutate(Target = if_else(CommonName %in% Target_Species$CommonName,TRUE,FALSE))
+table(All_Surveys$SurveySeason,is.na(All_Surveys$Volume))
   
   #===Create tow-level, target species summary of all surveys and core surveys
   #These data will be used to generate catch maps
@@ -150,23 +191,26 @@ Target_Tows <-  All_Surveys %>%
                                                       "Mud_Shrimp",
                                                       "Dungeness_Crab"),
                                     "Other_Crustacean",OrganismCategory))%>%  
-  select(-c(Target,Season,NetType))%>%
   mutate(CommonName = as.factor(if_else(CommonName %in% Target_Species$CommonName,CommonName,OrganismCategory)))%>%
+  select(-c(Target,Season,Age0Cut,Age1Cut,OrganismCategory,ForkLength))%>%
   group_by(SurveySeason,SampleDate,StationCode,TowNumber,CommonName)%>%
   mutate(Catch = n())%>%
   ungroup()%>%
-  distinct(across(c(StationCode,SampleDate,TowNumber,CommonName,SurveySeason)),.keep_all = TRUE)%>%
-  select(-ForkLength,OrganismCategory)%>%
+  distinct(across(c(StationCode,SampleDate,TowNumber,CommonName,SurveySeason,Gear,NetType)),.keep_all = TRUE)%>%
+  group_by(SampleDate,SurveySeason,StationCode,TowNumber,Gear,NetType)%>%mutate(Volume = mean(Volume))%>%
+  ungroup()%>%
   pivot_wider(values_from = Catch,names_prefix="Catch_",names_from = CommonName)%>%
-  mutate_at(vars(contains("Catch")), ~replace_na(., 0))
+  mutate_at(vars(contains("Catch")), ~replace_na(., 0))%>%
+  filter(Year>2002 & Year< 2020)%>%
+  distinct(across(c(StationCode,SampleDate,TowNumber,SurveySeason,Gear)),.keep_all = TRUE)%>% 
+  mutate(SurveyCategory = if_else(SurveySeason %in% c("SKT","FMWT","STN","20mm","SLS"),"CDFW","Other Pelagic"))%>%
+  mutate(SurveyCategory = if_else(NetType=="Beach Seine","Beach Seine",SurveyCategory))%>%
+  mutate(SurveyCategory = if_else(NetType=="Bottom Trawl","Bottom Trawl",SurveyCategory))%>%
+  relocate(SurveyCategory, .after = Gear)
   
-Target_Tows_Core <- 
-  Target_Tows %>%
-  filter(Core_Survey==T)
 
-#write_csv(Target_Tows,file="SpatialData/CatchPerTow_Focal_Species_With_External_Surveys.csv")
-#write_csv(Target_Tows_Core,file="SpatialData/CatchPerTow_Focal_Species_CDFW_Surveys.csv")
-table(Target_Tows_Core$SurveySeason,Target_Tows_Core$Month)
+
+
 #================Create Tabular Report of Fish Lengths by Survey===========
 
 Length_Summary <- All_Targets %>% filter(is.na(ForkLength)==F)%>%
@@ -329,5 +373,8 @@ Long_Master %>%
   geom_bar(stat="identity")+xlab("Log10 of total catch since 2002")
 
 dev.off()
+
+
+#==============Comparison of Effort
 
 

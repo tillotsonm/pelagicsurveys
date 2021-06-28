@@ -88,8 +88,6 @@ EDSM_Kodiak <- read_csv("RawData/EDSM/EDSM_KDTR.csv")%>%
 
 
 
-
-
 #LTMR Data package required, obtain from GitHub if needed
 require(LTMRdata)
 
@@ -138,14 +136,22 @@ LTMR_Tidy <- LTMR_Raw %>% uncount(Count)%>%select(-c(Datetime,SampleID,Secchi_es
          "SampleDate" = "Date",
          "ForkLength" = "Length",
          "Volume" = "Tow_volume",
-         "Area" = "Tow_area")%>%
+         "Area" = "Tow_area",
+         "DepthBottom" = "Depth")%>%
   separate(Taxa, into = c("Genus","Species"))%>%
   left_join(Master_Taxa,by=c("Genus","Species"))%>%
-  select(SurveySeason,StationCode,Station_Latitude,Station_Longitude,SampleDate,Volume,Area,CommonName,ForkLength,Gear)
+  add_column(TowDepth = NA)%>%
+  select(SurveySeason,StationCode,Station_Latitude,Station_Longitude,
+         SampleDate,Volume,Area,CommonName,ForkLength,Gear,DepthBottom,TowDepth)%>%
+  relocate(DepthBottom:TowDepth,.after = Volume)
 
 
 
 #Combine and extend EDSM data
+EDSM_Kodiak %>% mutate(Length_NA = is.na(ForkLength))%>%group_by(CommonName,Length_NA)%>%
+  summarise(Out = sum(SumOfCatchCount,na.rm=T))%>%view()
+
+EDSM_Kodiak %>% filter(ForkLength==0)%>%view()
 
 EDSM_Tidy <- (EDSM_20mm)%>%add_row(EDSM_Kodiak)%>% 
   rename("LengthFrequency" = "SumOfCatchCount")%>%
@@ -162,37 +168,58 @@ EDSM_Tidy <- (EDSM_20mm)%>%add_row(EDSM_Kodiak)%>%
   select(-c(TotalCount,TotalMeasured,Expression:FishComments,PairedDepth,GearConditionCode))%>%
   filter(is.na(LengthFrequency_Adjusted)==F)%>%
   uncount(LengthFrequency_Adjusted)%>%
-  select(StationCode,Station_Latitude,Station_Longitude,SampleDate,TowNumber,Volume,CommonName,ForkLength,Gear)%>%
+
+#Calculate Tow Depths
+  #Caclulate tow depth from CableOut based on equations in TN2 Mitchell, Polansky and Newman 2018
+  
+  #Create variable for BlockHeight by survey
+  mutate(BlockHeight = as.numeric(recode(Gear,
+                                         "20mm" = 8.1,
+                                         "Kodiak" = 0)))%>%
+  mutate(Angle = as.numeric(recode(Gear,
+                                   "20mm" = 0.156434465,
+                                   "Kodiak" = 0 )))%>%
+  mutate(Additional = as.numeric(recode(Gear,
+                                        "20mm" = 4.14,
+                                        "Kodiak" = 0)))%>%
+  
+  mutate(CableOut = na_if(MaxCableLength,0))%>%
+  #Calculate TowDepth
+  mutate(TowDepth = Angle*(MaxCableLength+Additional)-BlockHeight)%>%
+  
+  mutate(TowDepth = if_else(Gear=="Kodiak",6,TowDepth))%>%
+  
+  #Remove BlockHeight and CableOut
+  select(-c(BlockHeight,Angle,Additional))%>%
+  select(StationCode,Station_Latitude,Station_Longitude,SampleDate,TowNumber,Volume,DepthBottom,TowDepth,CommonName,ForkLength,Gear)%>%
   mutate(SurveySeason = "EDSM",
          Area = NA)
   
-  
-
 
 #Wrangle TPS Data
 
 
-TPS_Tidy <- TPS_Tow %>% pivot_longer(cols = c(American_Shad:Yellowfin_Goby),
-                                     names_to = "CommonName",
-                                     values_to = "TotalCatch")%>%
-  filter(is.na(TotalCatch)==F)%>%
-  right_join(TPS_Length,by=c("CommonName","StationCode"))%>%
-  filter(Fish_Length>0 & CommonName != "No_Catch")%>%
-  group_by(StationCode,CommonName)%>%
-  mutate(TotalMeasured = n())%>%ungroup()%>%
-  group_by(StationCode,CommonName,Fish_Length)%>%
-  mutate(LengthFrequency = n())%>%
-  distinct()%>%
-  rename("ForkLength" = "Fish_Length",
-         "SampleDate" = "Date",
-         "Gear" = "Fish_Net")%>%
-  mutate(LengthFrequency_Adjusted = round(TotalCatch*(LengthFrequency/TotalMeasured),0))%>%
-  ungroup()%>%
-  select(-c(TotalMeasured:LengthFrequency))%>%
-  filter(LengthFrequency_Adjusted>0)%>%
-  uncount(LengthFrequency_Adjusted)%>%
-  select(StationCode,Station_Latitude,Station_Longitude,SampleDate,CommonName,ForkLength,Gear)%>%
-  mutate(SurveySeason = "ICF_TPS")
+# TPS_Tidy <- TPS_Tow %>% pivot_longer(cols = c(American_Shad:Yellowfin_Goby),
+#                                      names_to = "CommonName",
+#                                      values_to = "TotalCatch")%>%
+#   filter(is.na(TotalCatch)==F)%>%
+#   right_join(TPS_Length,by=c("CommonName","StationCode"))%>%
+#   filter(Fish_Length>0 & CommonName != "No_Catch")%>%
+#   group_by(StationCode,CommonName)%>%
+#   mutate(TotalMeasured = n())%>%ungroup()%>%
+#   group_by(StationCode,CommonName,Fish_Length)%>%
+#   mutate(LengthFrequency = n())%>%
+#   distinct()%>%
+#   rename("ForkLength" = "Fish_Length",
+#          "SampleDate" = "Date",
+#          "Gear" = "Fish_Net")%>%
+#   mutate(LengthFrequency_Adjusted = round(TotalCatch*(LengthFrequency/TotalMeasured),0))%>%
+#   ungroup()%>%
+#   select(-c(TotalMeasured:LengthFrequency))%>%
+#   filter(LengthFrequency_Adjusted>0)%>%
+#   uncount(LengthFrequency_Adjusted)%>%
+#   select(StationCode,Station_Latitude,Station_Longitude,SampleDate,CommonName,ForkLength,Gear)%>%
+#  mutate(SurveySeason = "ICF_TPS")
 
 
 #Wrangle DJFMP Data
@@ -210,15 +237,25 @@ DJFMP_Tidy <- DJFMP_Raw%>%tibble()%>%
   uncount(LengthFrequency_Adjusted)%>%
   select(StationCode,Station_Latitude,Station_Longitude,SampleDate,TowNumber,Volume,CommonName,ForkLength,MethodCode)%>%
   mutate(SurveySeason = "DJFMP")%>%
-  rename("Gear" = "MethodCode")
+  rename("Gear" = "MethodCode")%>% 
+  mutate(Volume = if_else(Volume>999,Volume,NA_real_))%>%
+  mutate(Volume = if_else(Gear == "SEIN",32,Volume))%>%
+  mutate(TowDepth = recode(Gear,
+                           "SEIN" = 3,
+                           "KDTR" = 6,
+                           "MWTR" = NA_real_))%>%
+  mutate(DepthBottom = recode(Gear,
+                           "SEIN" = 3,
+                           "KDTR" = NA_real_,
+                           "MWTR" = NA_real_))
 
-DJFMP_Tidy %>% filter(LengthFrequency_Adjusted>TotalCount)%>%view()
+
 #=====================================================================================
 #Join all additional surveys
 Additional_Surveys <- EDSM_Tidy %>% 
   add_row(DJFMP_Tidy)%>%
   add_row(LTMR_Tidy)%>%
-  add_row(TPS_Tidy)%>%
+#  add_row(TPS_Tidy)%>%
   mutate(Year = year(SampleDate),Month = month(SampleDate),
           Station_Longitude = round(Station_Longitude,5),
           Station_Latitude = round(Station_Latitude,5))%>%
