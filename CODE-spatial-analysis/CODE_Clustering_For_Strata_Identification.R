@@ -49,7 +49,7 @@ EDSM_Strata<- EDSM_Strata_Temp %>%
   mutate(Review_Region = replace_na(Review_Region,"South"))%>%  
   select(-c(OBJECTID,OBJECTID_1,Shape_Leng,Shape_Area))
 
-Station_Points <-Review_Data_By_Station%>%
+Station_Points <-All_Surveys_Master%>%
   select(SurveySeason,Review_Region,SubRegion,Region,Review_Stratum,StationCode,Station_Longitude,Station_Latitude)%>%
   distinct(across(c("SurveySeason","StationCode")),.keep_all=T)%>%
   st_as_sf( coords = c("Station_Longitude", "Station_Latitude"), 
